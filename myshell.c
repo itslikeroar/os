@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "myshell.h"
+// #include "myshell.h"
 
 int cd(int argc, char **argv)
 {
@@ -16,9 +16,9 @@ int myexit(int argc, char *argv[])
 		exit(0);
 }
 
-functPtr builtinCommands[] = {
-	(functPtr)cd,
-	(functPtr)myexit
+int (*builtinCommands[])(int argc, char **argv) = {
+	[0] cd,
+	[1] myexit,
 };
 
 int main(int argc, char **argv)
@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 
 		// start parsing through the command
 		if (strcmp(command, "exit") == 0)
-			myexit(0, NULL);
+			builtinCommands[1](0, NULL);
 	}
 	exit(0);
 }
