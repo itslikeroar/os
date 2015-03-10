@@ -1,9 +1,9 @@
-#ifndef MYSHELL_H
-#define MYSHELL_H
+#include <stdio.h>
 
-typedef int (*functPtr) (int argc, char **argv);
-
-
+//typedef int (*functPtr) (int argc)
+//functPtr myfunctPtr[2];
 
 
-#endif
+
+
+
