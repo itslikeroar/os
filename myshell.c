@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
+#include "myshell.h"
 
 int cd(int argc, char **argv)
 {
@@ -19,15 +20,50 @@ int myexit(int argc, char *argv[])
 		exit(0);
 }
 
-int tokenizeArgs(const char *string, char **returnString)
+Token *tokenize(const char *string)
 {
-	int argcount = 0;
+	Token *t = (Token*)malloc(sizeof(Token));
+
+	t->argc = 0;
+	t->isPipe = 0;
+
+	t->argv = (char**)malloc(sizeof(char*) * 50);
+	t->argv[0] = (char*)malloc(sizeof(char) * 100);
+	char *currentString = t->argv[0];
+	int currentStringPosition = 0;
 
 	int i;
-	for (i = 0; i < strlen(string); i++)
-		printf("%c\n", string[i]);
+	for (i = 0; i <= strlen(string); i++)
+	{
+		if (string[i] != ' ' && string[i] != '|' && string[i] != '\n' && string[i] != '\0')
+		{
+			currentString[currentStringPosition++] = string[i];
+		}
+		else
+		{
+			if (string[i] == '|')
+				t->isPipe = 1;
 
-	return argcount;
+			if (currentStringPosition > 0)
+			{
+				currentString[currentStringPosition] = '\0';
+				t->argc++;
+				currentStringPosition = 0;
+
+				printf("terminated string: '%s'\n", currentString);
+
+				if (string[i] != '\0' && string[i] != '\n')
+				{
+					t->argv[t->argc] = (char*)malloc(sizeof(char) * 100);
+					currentString = t->argv[t->argc];
+				}
+			}
+		}
+	}
+
+	t->argv[t->argc] = NULL;
+
+	return t;
 }
 
 int (*builtinCommands[])(int argc, char **argv) = {
@@ -37,19 +73,25 @@ int (*builtinCommands[])(int argc, char **argv) = {
 
 int callprogram(int argc, char **argv)
 {
-	pid_t childpid= fork();
+	pid_t cpid = fork();
 
-	if(childpid == -1)
+	if(cpid == -1)
 	{
 		printf("failed to fork\n");
 		return 1;
 	}
-	else if (childpid == 0)
+	else if (cpid == 0)
 	{
 		// child
-		// printf("gonna execute %s\n", argv[0]);
+		printf("gonna execute:\n");
+
 		if (execvp(argv[0], argv) == -1)
+		{
 			printf("%s\n", strerror(errno));
+			// exit(1);
+		}
+		// error if it reaches this
+		return 1;
 	}
 	else
 	{
@@ -60,7 +102,7 @@ int callprogram(int argc, char **argv)
 		return exitstatus;
 		// wait(0);
 	}
-	return 0;
+	return -1;	// should never reach this
 }
 
 int main(int argc, char **argv)
@@ -70,18 +112,27 @@ int main(int argc, char **argv)
 		// printf("%s\n", getenv("PATH"));
 		char command[200];
 		printf("$ ");
-		scanf("%s", command);
+		fgets(command, 200, stdin);
 
 		// start parsing through the command
-		if (strcmp(command, "exit") == 0)
+		if (strncmp(command, "exit", 4) == 0)
 			builtinCommands[1](0, NULL);
 		// else if (strcmp(command, "cd") == 0)
 			// builtinCommands[0]()
 		else
 		{
-			char *string = "gcc";
-			char *lies[] = {string, NULL};
-			int exitval = callprogram(1, lies);
+			Token *t = tokenize(command);
+			int exitval;
+
+			int i = 0;
+			for (; t->argv[i] != NULL; i++)
+				printf("arg %d: %s\n", i, t->argv[i]);
+
+			if (!t->isPipe)
+			 	exitval = callprogram(t->argc, t->argv);
+
+			free(t);
+
 			printf("exited with value %d\n", exitval);
 		}
 	}
