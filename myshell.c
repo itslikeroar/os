@@ -91,14 +91,15 @@ int callprogram(int argc, char **argv)
 			// exit(1);
 		}
 		// error if it reaches this
-		return 1;
+		// return 1;
+		exit(1);
 	}
 	else
 	{
 		// printf("here\n");
 		// parent
 		int exitstatus;
-		wait(&exitstatus);
+		waitpid(cpid, &exitstatus, WUNTRACED);
 		return exitstatus;
 		// wait(0);
 	}
