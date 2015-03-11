@@ -50,7 +50,7 @@ Token *tokenize(const char *string)
 				t->argc++;
 				currentStringPosition = 0;
 
-				printf("terminated string: '%s'\n", currentString);
+				// printf("terminated string: '%s'\n", currentString);
 
 				if (string[i] != '\0' && string[i] != '\n')
 				{
@@ -83,7 +83,7 @@ int callprogram(int argc, char **argv)
 	else if (cpid == 0)
 	{
 		// child
-		printf("gonna execute:\n");
+		// printf("gonna execute:\n");
 
 		if (execvp(argv[0], argv) == -1)
 		{
