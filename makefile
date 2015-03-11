@@ -3,7 +3,7 @@ CFLAGS = -Wall -g
 # OBJS =
 all:	myshell
 
-myshell:	myshell.h myshell.c
+myshell:	myshell.c
 	$(CC) $(CFLAGS) myshell.c -o myshell
 
 clean:
