@@ -98,8 +98,8 @@ int callprogram(int argc, char **argv)
 	{
 		// printf("here\n");
 		// parent
-		int exitstatus;
-		waitpid(cpid, &exitstatus, WUNTRACED);
+		int exitstatus = 0;
+		waitpid(cpid, &exitstatus, WUNTRACED | WUNTRACED);
 		return exitstatus;
 		// wait(0);
 	}
