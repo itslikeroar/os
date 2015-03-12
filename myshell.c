@@ -20,50 +20,74 @@ int myexit(int argc, char *argv[])
 		exit(0);
 }
 
-Token *tokenize(const char *string)
+Token *TokenCreate()
 {
 	Token *t = (Token*)malloc(sizeof(Token));
-
-	t->argc = 0;
-	t->isPipe = 0;
-
 	t->argv = (char**)malloc(sizeof(char*) * 50);
 	t->argv[0] = (char*)malloc(sizeof(char) * 100);
-	char *currentString = t->argv[0];
+	return t;
+}
+
+Token **tokenize(const char *string)
+{
+	Token **tokenArray = (Token**)malloc(sizeof(Token*) * 50);
+	tokenArray[0] = TokenCreate();
+	Token *currentToken = tokenArray[0];
+
+	// isQuoted = 0;
+
+	currentToken->argc = 0;
+	int tokenNum = 0;
+
+	char *currentString = currentToken->argv[0];
 	int currentStringPosition = 0;
+
+	int stringIsTerminated = 0;
 
 	int i;
 	for (i = 0; i <= strlen(string); i++)
 	{
 		if (string[i] != ' ' && string[i] != '|' && string[i] != '\n' && string[i] != '\0')
 		{
+			if (stringIsTerminated)
+			{
+				currentToken->argv[currentToken->argc] = (char*)malloc(sizeof(char) * 100);
+				currentString = currentToken->argv[currentToken->argc];
+			}
+
 			currentString[currentStringPosition++] = string[i];
 		}
 		else
 		{
-			if (string[i] == '|')
-				t->isPipe = 1;
-
 			if (currentStringPosition > 0)
 			{
 				currentString[currentStringPosition] = '\0';
-				t->argc++;
+				currentToken->argc++;
 				currentStringPosition = 0;
 
 				// printf("terminated string: '%s'\n", currentString);
 
 				if (string[i] != '\0' && string[i] != '\n')
 				{
-					t->argv[t->argc] = (char*)malloc(sizeof(char) * 100);
-					currentString = t->argv[t->argc];
+					stringIsTerminated = 1;
+					// currentToken->argv[currentToken->argc] = (char*)malloc(sizeof(char) * 100);
+					// currentString = currentToken->argv[currentToken->argc];
 				}
+			}
+
+			if (string[i] == '|')
+			{
+				currentToken->argv[currentToken->argc] = NULL;
+				tokenArray[++tokenNum] = TokenCreate();
+				currentToken = tokenArray[tokenNum];
 			}
 		}
 	}
 
-	t->argv[t->argc] = NULL;
+	currentToken->argv[currentToken->argc] = NULL;
+	tokenArray[tokenNum + 1] = NULL;
 
-	return t;
+	return tokenArray;
 }
 
 int (*builtinCommands[])(int argc, char **argv) = {
@@ -100,6 +124,7 @@ int callprogram(int argc, char **argv)
 		// parent
 		int exitstatus = 0;
 		waitpid(cpid, &exitstatus, WUNTRACED | WUNTRACED);
+		exitstatus = WIFEXITED(exitstatus);
 		return exitstatus;
 		// wait(0);
 	}
@@ -122,19 +147,25 @@ int main(int argc, char **argv)
 			// builtinCommands[0]()
 		else
 		{
-			Token *t = tokenize(command);
-			int exitval;
+			Token **tokenArray = tokenize(command);
+			// int exitval;
 
-			int i = 0;
-			for (; t->argv[i] != NULL; i++)
-				printf("arg %d: %s\n", i, t->argv[i]);
+			if (tokenArray[1] == NULL)
+			{
+				// printf("only one command\n");
+				exitval = callprogram(t->argc, t->argv);
 
-			if (!t->isPipe)
-			 	exitval = callprogram(t->argc, t->argv);
+				// MOVE THIS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				printf("exited with value %d\n", exitval);
+			}
+			else
+			{
+				printf("many pipe\n");
+			}
+			 
+			// free(t);
 
-			free(t);
-
-			printf("exited with value %d\n", exitval);
+			
 		}
 	}
 	exit(0);
