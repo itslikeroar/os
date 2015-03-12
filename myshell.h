@@ -4,7 +4,7 @@
 typedef struct token {
 	int argc;
 	char **argv;
-	int isPipe;
+	// int isPipe;
 } Token;
 
 
