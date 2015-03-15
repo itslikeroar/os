@@ -174,7 +174,7 @@ int pipecommands(Token **array)
 	{
 		dup2(fd[0], 0);
 		close(fd[1]);
-		int retVal = runcommands(array + 1);
+		int retVal = callprogram(array + 1, NULL, NULL);
 		close(fd[0]);
 		return retVal;
 		
@@ -183,12 +183,7 @@ int pipecommands(Token **array)
 	{
 		int status;
 		wait(&status);
-		status = WEXITSTATUS(status);
-
-		if (retVal != 0)
-			status = retVal;
-
-		return status;
+		return WEXITSTATUS(status);
 	}
 	// should never be here
 	return -1;
@@ -225,12 +220,10 @@ int pipecommands(Token **array)
 
 int main(int argc, char **argv)
 {
-	while (1)
+	char command[200];
+	while (printf("$ "), fgets(command, 200, stdin))
 	{
 		// printf("%s\n", getenv("PATH"));
-		char command[200];
-		printf("$ ");
-		fgets(command, 200, stdin);
 
 		// start parsing through the command
 		if (strncmp(command, "exit", 4) == 0)
@@ -272,5 +265,6 @@ int main(int argc, char **argv)
 			
 		}
 	}
+	printf("exit\n");
 	exit(0);
 }
