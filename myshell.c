@@ -147,6 +147,8 @@ int callprogram(Token *t, int in[2], int out[2])
 			exitstatus = WEXITSTATUS(exitstatus);
 			return exitstatus;
 		}
+		else
+			return 0; // don't wait yet
 		// wait(0);
 	}
 	return -1;	// should never reach this
@@ -159,9 +161,9 @@ int pipecommands(Token **array)
 
 	if (array[1] == NULL)
 		return callprogram(array[0], NULL, NULL);
-	
-	int fd[2];
-	pipe(fd);
+
+	int fdArray[50][2];
+	memset(fdArray, 0, sizeof(int) * 50 * 2)
 
 	pid_t cpid = fork();
 
@@ -172,18 +174,32 @@ int pipecommands(Token **array)
 	}
 	else if (cpid == 0) // child
 	{
-		dup2(fd[0], 0);
-		close(fd[1]);
-		int retVal = callprogram(array + 1, NULL, NULL);
-		close(fd[0]);
-		return retVal;
+		int *pipeIn = NULL;
+		int *pipeOut NULL;
+
+		pipe(fdArray[i]);
+
+		int i = 0;
+		for (i = 0; array[i] != NULL; i++)
+		{
+			if (i == 0)
+				pipeOut 
+
+			callprogram(array[i], fdArray[i])
+		}
+		dup2(fdArray[i][0], 0);
+		close(fdArray[i][1]);
+		// int retVal = callprogram(array[i], NULL, NULL);
+		close(fdArray[i][0]);
+		// return retVal;
 		
 	}
 	else // parent
 	{
 		int status;
-		wait(&status);
-		return WEXITSTATUS(status);
+		pid_t child;
+		while ((child = wait(&status)) != -1)
+			printf("child %d terminated.\n", child);
 	}
 	// should never be here
 	return -1;
@@ -223,8 +239,6 @@ int main(int argc, char **argv)
 	char command[200];
 	while (printf("$ "), fgets(command, 200, stdin))
 	{
-		// printf("%s\n", getenv("PATH"));
-
 		// start parsing through the command
 		if (strncmp(command, "exit", 4) == 0)
 			builtinCommands[1](0, NULL);
@@ -265,6 +279,6 @@ int main(int argc, char **argv)
 			
 		}
 	}
-	printf("exit\n");
+	printf("\n");
 	exit(0);
 }
