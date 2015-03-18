@@ -130,6 +130,7 @@ int callprogram(Token *t, int in[2], int out[2])
 		if (out != NULL)
 		{
 			dup2(out[1], 1);
+			// printf("%s outputing to %ld\n", t->argv[0], out);
 			close(out[0]);
 		}
 
@@ -154,7 +155,7 @@ int callprogram(Token *t, int in[2], int out[2])
 		// parent
 		if (in == NULL && out == NULL)
 		{
-			int exitstatus = 0;
+			int exitstatus;
 			wait(&exitstatus);
 			exitstatus = WEXITSTATUS(exitstatus);
 			return exitstatus;
@@ -172,23 +173,26 @@ int pipecommands(Cmds *commands)
 	memset(fdArray, 0, sizeof(int) * 50 * 2);
 
 	int i = 0;
+	for (i = 0; i < commands->count - 1; i++)
+		pipe(fdArray[i]);
+
 	for (i = 0; i < commands->count; i++)
 	{
 		int *pipeIn = NULL;
 		int *pipeOut = NULL;
 
-		if (i - 1 >= 0)
-		{
-			if (fdArray[i - 1] == NULL)
-				pipe(fdArray[i - 1]);
-			pipeIn = fdArray[i - 1];
-		}
-
 		if (i + 1 < commands->count)
 		{
-			if (fdArray[i] == NULL)
-				pipe(fdArray[i]);
+			printf("gonna make pipeOut for %s\n", commands->tokens[i]->argv[0]);
+			// if (fdArray[i] == NULL)
+			// 	pipe(fdArray[i]);
 			pipeOut = fdArray[i];
+		}
+
+		if (i - 1 >= 0)
+		{
+			printf("gonna make pipeIn for %s\n", commands->tokens[i]->argv[0]);
+			pipeIn = fdArray[i - 1];
 		}
 
 		printf("calling program with in: %ld, out: %ld\n", pipeIn, pipeOut);
@@ -202,11 +206,17 @@ int pipecommands(Cmds *commands)
 	// // return retVal;
 
 	printf("wut\n");
+	for (i = 0; i < commands->count; i++)
+	{
+		close(fdArray[i][1]);
+		close(fdArray[i][0]);
+	}
+
 	int status;
 	pid_t child;
 	while ((child = wait(&status)) != -1)
-		printf("child %d terminated.\n", child);
-	return WEXITSTATUS(status);
+		printf("child %d exits with %d\n", child, WEXITSTATUS(status));
+	return 0;
 }
 
 // int runcommands(Token **array)
@@ -277,7 +287,7 @@ int main(int argc, char **argv)
 			{
 				printf("such here\n");
 				exitval = pipecommands(commands);
-				printf("exited with value %d\n", exitval);
+				printf("pipe commands exited with value %d\n", exitval);
 			}
 			 
 			// free(t);
