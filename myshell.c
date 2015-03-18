@@ -29,9 +29,19 @@ Token *TokenCreate()
 	return t;
 }
 
-Token **tokenize(const char *string)
+Cmds *CommandsCreate()
 {
-	Token **tokenArray = (Token**)malloc(sizeof(Token*) * 50);
+	Cmds *commands = (Cmds*)malloc(sizeof(Cmds));
+	commands->tokens = (Token**)malloc(sizeof(Token*) * 50);
+	commands->count = 0;
+	return commands;
+}
+
+Cmds *tokenize(const char *string)
+{
+	Cmds *commands = CommandsCreate();
+	// Token **tokenArray = (Token**)malloc(sizeof(Token*) * 50);
+	Token **tokenArray = commands->tokens;
 	tokenArray[0] = TokenCreate();
 	Token *currentToken = tokenArray[0];
 
@@ -89,7 +99,9 @@ Token **tokenize(const char *string)
 	currentToken->argv[currentToken->argc] = NULL;
 	tokenArray[tokenNum + 1] = NULL;
 
-	return tokenArray;
+	commands->count = tokenNum + 1;
+
+	return commands;
 }
 
 int (*builtinCommands[])(int argc, char **argv) = {
@@ -154,48 +166,47 @@ int callprogram(Token *t, int in[2], int out[2])
 	return -1;	// should never reach this
 }
 
-int pipecommands(Token **array)
+int pipecommands(Cmds *commands)
 {
-	if (array == NULL || array[0] == NULL)
-		return -1;
-
-	if (array[1] == NULL)
-		return callprogram(array[0], NULL, NULL);
-
 	int fdArray[50][2];
-	memset(fdArray, 0, sizeof(int) * 50 * 2)
+	memset(fdArray, 0, sizeof(int) * 50 * 2);
 
 	pid_t cpid = fork();
 
 	if (cpid == -1)
 	{
-		fprintf(stderr, "failed to fork on %s\n", array[0]->argv[0]);
+		fprintf(stderr, "failed to fork on %s:%d\n", __FILE__, __LINE__);
 		return 1;
 	}
 	else if (cpid == 0) // child
 	{
-		int *pipeIn = NULL;
-		int *pipeOut NULL;
+		int i = 0;
 
 		pipe(fdArray[i]);
 
-		int i = 0;
-		for (i = 0; array[i] != NULL; i++)
+		for (i = 0; i < commands->count; i++)
 		{
-			if (i == 0)
-				pipeOut 
+			int *pipeIn = NULL;
+			int *pipeOut = NULL;
 
-			callprogram(array[i], fdArray[i])
+			if (i - 1 >= 0)
+				pipeIn = fdArray[i - 1];
+
+			if (i + 1 < commands->count)
+				pipeOut = fdArray[i];
+
+			callprogram(commands->tokens[i], pipeIn, pipeOut);
 		}
-		dup2(fdArray[i][0], 0);
-		close(fdArray[i][1]);
-		// int retVal = callprogram(array[i], NULL, NULL);
-		close(fdArray[i][0]);
-		// return retVal;
-		
+
+		// dup2(fdArray[i][0], 0);
+		// close(fdArray[i][1]);
+		// // int retVal = callprogram(array[i], NULL, NULL);
+		// close(fdArray[i][0]);
+		// // return retVal;
 	}
 	else // parent
 	{
+		printf("wut\n");
 		int status;
 		pid_t child;
 		while ((child = wait(&status)) != -1)
@@ -246,11 +257,13 @@ int main(int argc, char **argv)
 			// builtinCommands[0]()
 		else
 		{
-			Token **tokenArray = tokenize(command);
+			Cmds *commands = tokenize(command);
+			printf("commands->count: %d\n", commands->count);
+			Token **tokenArray = commands->tokens;
 			int exitval;
 
 			int i;
-			for (i = 0; tokenArray[i] != NULL; i++)
+			for (i = 0; i < commands->count; i++)
 			{
 				printf("token %s:", tokenArray[i]->argv[0]);
 				int j;
@@ -259,7 +272,7 @@ int main(int argc, char **argv)
 				printf("\n");
 			}
 
-			if (tokenArray[1] == NULL)
+			if (commands->count == 1)
 			{
 				printf("only one command\n");
 				exitval = callprogram(tokenArray[0], NULL, NULL);
@@ -270,7 +283,7 @@ int main(int argc, char **argv)
 			else
 			{
 				printf("such here\n");
-				exitval = pipecommands(tokenArray);
+				exitval = pipecommands(commands);
 				printf("exited with value %d\n", exitval);
 			}
 			 

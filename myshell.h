@@ -7,5 +7,9 @@ typedef struct token {
 	// int isPipe;
 } Token;
 
+typedef struct commands {
+	Token **tokens;
+	int count;
+} Cmds;
 
 #endif
