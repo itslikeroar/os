@@ -125,16 +125,17 @@ int callprogram(Token *t, int in[2], int out[2])
 		{
 			dup2(in[0], 0);
 			close(in[1]);
+			printf("[%d]%s input from %ld\n", getpid(), t->argv[0], in);
 		}
 
 		if (out != NULL)
 		{
 			dup2(out[1], 1);
-			// printf("%s outputing to %ld\n", t->argv[0], out);
 			close(out[0]);
+			printf("[%d]%s outputing to %ld\n", getpid(), t->argv[0], out);
 		}
 
-		printf("gonna execute: ");
+		printf("[%d]gonna execute: ", getpid());
 		int i;
 		for (i = 0; t->argv[i] != NULL; i++)
 			printf("'%s' ", t->argv[i]);
@@ -155,9 +156,11 @@ int callprogram(Token *t, int in[2], int out[2])
 		// parent
 		if (in == NULL && out == NULL)
 		{
+			printf("executed without any redirects\n");
 			int exitstatus;
 			wait(&exitstatus);
 			exitstatus = WEXITSTATUS(exitstatus);
+			printf("exited with value %d\n", exitstatus);
 			return exitstatus;
 		}
 		else
@@ -190,18 +193,20 @@ void pipecommands(Cmds *commands)
 		if (i != commands->count - 1)
 			pipeOut = fdArray[i];
 
+		printf("callprogram %s with pipeIn: %ld (pipeArray[%d]), pipeOut: %ld (pipeArray[%d])\n",
+			commands->tokens[i]->argv[0], pipeIn, i - 1, pipeOut, i);
 		callprogram(commands->tokens[i], pipeIn, pipeOut);
 	}
 
 	for (i = 0; i < commands->count - 1; i++)
 	{
+		printf("closing pipe %d\n", i);
 		close(fdArray[i][0]);
 		close(fdArray[i][1]);
 	}
 
-	while((cpid = wait(&status)) != -1)
+	while ((cpid = wait(&status)) != -1)
 		printf("child %d exits with %d\n", cpid, WEXITSTATUS(status));
-	
 }
 
 int main(int argc, char **argv)
@@ -219,7 +224,7 @@ int main(int argc, char **argv)
 			Cmds *commands = tokenize(command);
 			printf("commands->count: %d\n", commands->count);
 			Token **tokenArray = commands->tokens;
-			int exitval;
+			// int exitval;
 
 			int i;
 			for (i = 0; i < commands->count; i++)
@@ -234,10 +239,7 @@ int main(int argc, char **argv)
 			if (commands->count == 1)
 			{
 				printf("only one command\n");
-				exitval = callprogram(tokenArray[0], NULL, NULL);
-
-				// MOVE THIS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-				printf("exited with value %d\n", exitval);
+				callprogram(tokenArray[0], NULL, NULL);
 			}
 			else
 			{
