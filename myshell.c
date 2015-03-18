@@ -152,7 +152,7 @@ int callprogram(Token *t, int in[2], int out[2])
 	else
 	{
 		// parent
-		if (in != NULL && out != NULL)
+		if (in == NULL && out == NULL)
 		{
 			int exitstatus = 0;
 			wait(&exitstatus);
