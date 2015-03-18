@@ -171,49 +171,42 @@ int pipecommands(Cmds *commands)
 	int fdArray[50][2];
 	memset(fdArray, 0, sizeof(int) * 50 * 2);
 
-	pid_t cpid = fork();
-
-	if (cpid == -1)
+	int i = 0;
+	for (i = 0; i < commands->count; i++)
 	{
-		fprintf(stderr, "failed to fork on %s:%d\n", __FILE__, __LINE__);
-		return 1;
-	}
-	else if (cpid == 0) // child
-	{
-		int i = 0;
+		int *pipeIn = NULL;
+		int *pipeOut = NULL;
 
-		pipe(fdArray[i]);
-
-		for (i = 0; i < commands->count; i++)
+		if (i - 1 >= 0)
 		{
-			int *pipeIn = NULL;
-			int *pipeOut = NULL;
-
-			if (i - 1 >= 0)
-				pipeIn = fdArray[i - 1];
-
-			if (i + 1 < commands->count)
-				pipeOut = fdArray[i];
-
-			callprogram(commands->tokens[i], pipeIn, pipeOut);
+			if (fdArray[i - 1] == NULL)
+				pipe(fdArray[i - 1]);
+			pipeIn = fdArray[i - 1];
 		}
 
-		// dup2(fdArray[i][0], 0);
-		// close(fdArray[i][1]);
-		// // int retVal = callprogram(array[i], NULL, NULL);
-		// close(fdArray[i][0]);
-		// // return retVal;
+		if (i + 1 < commands->count)
+		{
+			if (fdArray[i] == NULL)
+				pipe(fdArray[i]);
+			pipeOut = fdArray[i];
+		}
+
+		printf("calling program with in: %ld, out: %ld\n", pipeIn, pipeOut);
+		callprogram(commands->tokens[i], pipeIn, pipeOut);
 	}
-	else // parent
-	{
-		printf("wut\n");
-		int status;
-		pid_t child;
-		while ((child = wait(&status)) != -1)
-			printf("child %d terminated.\n", child);
-	}
-	// should never be here
-	return -1;
+
+	// dup2(fdArray[i][0], 0);
+	// close(fdArray[i][1]);
+	// // int retVal = callprogram(array[i], NULL, NULL);
+	// close(fdArray[i][0]);
+	// // return retVal;
+
+	printf("wut\n");
+	int status;
+	pid_t child;
+	while ((child = wait(&status)) != -1)
+		printf("child %d terminated.\n", child);
+	return WEXITSTATUS(status);
 }
 
 // int runcommands(Token **array)
