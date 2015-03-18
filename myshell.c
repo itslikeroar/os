@@ -167,86 +167,42 @@ int callprogram(Token *t, int in[2], int out[2])
 	return -1;	// should never reach this
 }
 
-int pipecommands(Cmds *commands)
+void pipecommands(Cmds *commands)
 {
+	pid_t cpid;
+	int status, i;
 	int fdArray[50][2];
-	memset(fdArray, 0, sizeof(int) * 50 * 2);
 
-	int i = 0;
 	for (i = 0; i < commands->count - 1; i++)
+	{
+		printf("making pipe %d\n", i);
 		pipe(fdArray[i]);
+	}
 
 	for (i = 0; i < commands->count; i++)
 	{
 		int *pipeIn = NULL;
 		int *pipeOut = NULL;
 
-		if (i + 1 < commands->count)
-		{
-			printf("gonna make pipeOut for %s\n", commands->tokens[i]->argv[0]);
-			// if (fdArray[i] == NULL)
-			// 	pipe(fdArray[i]);
-			pipeOut = fdArray[i];
-		}
-
-		if (i - 1 >= 0)
-		{
-			printf("gonna make pipeIn for %s\n", commands->tokens[i]->argv[0]);
+		if (i != 0)
 			pipeIn = fdArray[i - 1];
-		}
 
-		printf("calling program with in: %ld, out: %ld\n", pipeIn, pipeOut);
+		if (i != commands->count - 1)
+			pipeOut = fdArray[i];
+
 		callprogram(commands->tokens[i], pipeIn, pipeOut);
 	}
 
-	// dup2(fdArray[i][0], 0);
-	// close(fdArray[i][1]);
-	// // int retVal = callprogram(array[i], NULL, NULL);
-	// close(fdArray[i][0]);
-	// // return retVal;
-
-	printf("wut\n");
-	for (i = 0; i < commands->count; i++)
+	for (i = 0; i < commands->count - 1; i++)
 	{
-		close(fdArray[i][1]);
 		close(fdArray[i][0]);
+		close(fdArray[i][1]);
 	}
 
-	int status;
-	pid_t child;
-	while ((child = wait(&status)) != -1)
-		printf("child %d exits with %d\n", child, WEXITSTATUS(status));
-	return 0;
+	while((cpid = wait(&status)) != -1)
+		printf("child %d exits with %d\n", cpid, WEXITSTATUS(status));
+	
 }
-
-// int runcommands(Token **array)
-// {
-// 	if (array == NULL || array[0] == NULL)
-// 		return -1;
-
-// 	if (array[1] == NULL)
-// 		return callprogram(array[0]);
-
-// 	pid_t cpid = fork();
-
-// 	if (cpid == -1)
-// 	{
-// 		fprintf(stderr, "failed to fork on %s\n", array[0]->argv[0]);
-// 		return 1;
-// 	}
-// 	else if (cpid == 0) // child
-// 	{
-// 		// makes sure that the original stdout is not redirected
-// 		int retVal = pipecommands(array);
-// 		exit(retVal);
-// 	}
-// 	else // parent
-// 	{
-// 		int status;
-// 		wait(&status);
-// 		return WEXITSTATUS(status);
-// 	}
-// }
 
 int main(int argc, char **argv)
 {
@@ -286,8 +242,8 @@ int main(int argc, char **argv)
 			else
 			{
 				printf("such here\n");
-				exitval = pipecommands(commands);
-				printf("pipe commands exited with value %d\n", exitval);
+				pipecommands(commands);
+				// printf("pipe commands exited with value %d\n", exitval);
 			}
 			 
 			// free(t);
