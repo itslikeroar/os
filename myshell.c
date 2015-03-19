@@ -123,23 +123,25 @@ int callprogram(Token *t, int in[2], int out[2])
 		// child
 		if (in != NULL)
 		{
-			dup2(in[0], 0);
+			// printf("[%d]%s input from %ld\n", getpid(), t->argv[0], in);
 			close(in[1]);
-			printf("[%d]%s input from %ld\n", getpid(), t->argv[0], in);
+			dup2(in[0], 0);
+			close(in[0]);
 		}
 
 		if (out != NULL)
 		{
-			dup2(out[1], 1);
+			// printf("[%d]%s outputing to %ld\n", getpid(), t->argv[0], out);
 			close(out[0]);
-			printf("[%d]%s outputing to %ld\n", getpid(), t->argv[0], out);
+			dup2(out[1], 1);
+			close(out[1]);
 		}
 
-		printf("[%d]gonna execute: ", getpid());
-		int i;
-		for (i = 0; t->argv[i] != NULL; i++)
-			printf("'%s' ", t->argv[i]);
-		printf("\n");
+		// printf("[%d]gonna execute: ", getpid());
+		// int i;
+		// for (i = 0; t->argv[i] != NULL; i++)
+		// 	printf("'%s' ", t->argv[i]);
+		// printf("\n");
 
 		if (execvp(t->argv[0], t->argv) == -1)
 		{
