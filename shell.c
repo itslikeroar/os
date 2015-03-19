@@ -5,7 +5,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
-#include "myshell.h"
+#include "shell.h"
 
 int cd(int argc, char **argv)
 {
@@ -158,7 +158,7 @@ int callprogram(Token *t, int in[2], int out[2])
 		// parent
 		if (in == NULL && out == NULL)
 		{
-			printf("executed without any redirects\n");
+			// printf("executed without any pipes\n");
 			int exitstatus;
 			wait(&exitstatus);
 			exitstatus = WEXITSTATUS(exitstatus);
@@ -180,7 +180,7 @@ void pipecommands(Cmds *commands)
 
 	for (i = 0; i < commands->count - 1; i++)
 	{
-		printf("making pipe %d\n", i);
+		// printf("making pipe %d\n", i);
 		pipe(fdArray[i]);
 	}
 
@@ -195,13 +195,13 @@ void pipecommands(Cmds *commands)
 		if (i != commands->count - 1)
 			pipeOut = fdArray[i];
 
-		printf("callprogram %s with pipeIn: %ld (pipeArray[%d]), pipeOut: %ld (pipeArray[%d])\n",
-			commands->tokens[i]->argv[0], pipeIn, i - 1, pipeOut, i);
+		// printf("callprogram %s with pipeIn: %ld (pipeArray[%d]), pipeOut: %ld (pipeArray[%d])\n",
+		// 	commands->tokens[i]->argv[0], pipeIn, i - 1, pipeOut, i);
 		callprogram(commands->tokens[i], pipeIn, pipeOut);
 
 		if (i - 1 >= 0)
 		{
-			printf("closing pipe %d\n", i);
+			// printf("closing pipe %d\n", i);
 			close(fdArray[i-1][0]);
 			close(fdArray[i-1][1]);
 		}
@@ -230,28 +230,28 @@ int main(int argc, char **argv)
 		else
 		{
 			Cmds *commands = tokenize(command);
-			printf("commands->count: %d\n", commands->count);
+			// printf("commands->count: %d\n", commands->count);
 			Token **tokenArray = commands->tokens;
 			// int exitval;
 
-			int i;
-			for (i = 0; i < commands->count; i++)
-			{
-				printf("token %s:", tokenArray[i]->argv[0]);
-				int j;
-				for (j = 0; tokenArray[i]->argv[j] != NULL; j++)
-					printf("'%s'", tokenArray[i]->argv[j]);
-				printf("\n");
-			}
+			// int i;
+			// for (i = 0; i < commands->count; i++)
+			// {
+			// 	printf("token %s:", tokenArray[i]->argv[0]);
+			// 	int j;
+			// 	for (j = 0; tokenArray[i]->argv[j] != NULL; j++)
+			// 		printf("'%s'", tokenArray[i]->argv[j]);
+			// 	printf("\n");
+			// }
 
 			if (commands->count == 1)
 			{
-				printf("only one command\n");
+				// printf("only one command\n");
 				callprogram(tokenArray[0], NULL, NULL);
 			}
 			else
 			{
-				printf("such here\n");
+				// printf("such here\n");
 				pipecommands(commands);
 				// printf("pipe commands exited with value %d\n", exitval);
 			}
