@@ -1,10 +1,10 @@
 CC = gcc
 CFLAGS = -Wall -g
 # OBJS =
-all:	myshell
+all:	shell
 
-myshell:	myshell.h myshell.c
-	$(CC) $(CFLAGS) myshell.c -o myshell
+shell:	shell.h shell.c
+	$(CC) $(CFLAGS) shell.c -o shell
 
 clean:
-	rm -rf myshell
+	rm -rf shell
