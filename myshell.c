@@ -196,14 +196,20 @@ void pipecommands(Cmds *commands)
 		printf("callprogram %s with pipeIn: %ld (pipeArray[%d]), pipeOut: %ld (pipeArray[%d])\n",
 			commands->tokens[i]->argv[0], pipeIn, i - 1, pipeOut, i);
 		callprogram(commands->tokens[i], pipeIn, pipeOut);
+
+		if (i - 1 >= 0)
+		{
+			printf("closing pipe %d\n", i);
+			close(fdArray[i-1][0]);
+			close(fdArray[i-1][1]);
+		}
 	}
 
-	for (i = 0; i < commands->count - 1; i++)
-	{
-		printf("closing pipe %d\n", i);
-		close(fdArray[i][0]);
-		close(fdArray[i][1]);
-	}
+	// for (i = 0; i < commands->count - 1; i++)
+	// {
+	// 	close(fdArray[i][0]);
+	// 	close(fdArray[i][1]);
+	// }
 
 	while ((cpid = wait(&status)) != -1)
 		printf("child %d exits with %d\n", cpid, WEXITSTATUS(status));
