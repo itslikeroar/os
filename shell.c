@@ -25,7 +25,7 @@ Cmd *CmdCreate()
 	Cmd *newcmd = (Cmd*)malloc(sizeof(Cmd));
 	newcmd->argv = (char**)malloc(sizeof(char*) * 50);
 	newcmd->argv[0] = NULL;
-	newcmd->argc = 0;
+	// newcmd->argc = 0;
 	newcmd->next = NULL;
 	return newcmd;
 }
@@ -73,6 +73,13 @@ Cmd *tokenize(char string[])
 		if (string[i] == '\0')
 			break;
 
+		if (argNum >= 50)
+		{
+			fprintf(stderr, "Error: Too many arguments\n");
+			CmdListDestroy(commands);
+			return NULL;
+		}
+
 		// printf("on char: %c, argnum: %d\n", string[i], argNum);
 		if (quoted == 0)
 		{
@@ -101,7 +108,7 @@ Cmd *tokenize(char string[])
 				{
 					if (argNum == 0)
 					{
-						fprintf(stderr, "Piping without command\n");
+						fprintf(stderr, "Error: Piping without command\n");
 						CmdListDestroy(commands);
 						return NULL;
 					}
@@ -138,14 +145,14 @@ Cmd *tokenize(char string[])
 
 	if (quoted != 0)
 	{
-		fprintf(stderr, "missmatched quotes\n");
+		fprintf(stderr, "Error: missmatched quotes\n");
 		CmdListDestroy(commands);
 		return NULL;
 	}
 
 	if (argNum == 0)
 	{
-		fprintf(stderr, "Not enough arguments\n");
+		fprintf(stderr, "Error: Not enough arguments\n");
 		CmdListDestroy(commands);
 		return NULL;
 	}
@@ -158,113 +165,116 @@ int (*builtinCommands[])(int argc, char **argv) = {
 	[1] myexit,
 };
 
-// int callprogram(Token *t, int in[2], int out[2])
-// {
-// 	pid_t cpid = fork();
+int callprogram(char *argv[], int in[2], int out[2])
+{
+	pid_t cpid = fork();
 
-// 	if (cpid == -1)
-// 	{
-// 		fprintf(stderr, "failed to fork on %s\n", t->argv[0]);
-// 		return 1;
-// 	}
-// 	else if (cpid == 0)
-// 	{
-// 		// child
-// 		if (in != NULL)
-// 		{
-// 			// printf("[%d]%s input from %ld\n", getpid(), t->argv[0], in);
-// 			close(in[1]);
-// 			dup2(in[0], 0);
-// 			close(in[0]);
-// 		}
+	if (cpid == -1)
+	{
+		fprintf(stderr, "failed to fork on %s\n", argv[0]);
+		return 1;
+	}
+	else if (cpid == 0)
+	{
+		// child
+		if (in != NULL)
+		{
+			// printf("[%d]%s input from %ld\n", getpid(), t->argv[0], in);
+			close(in[1]);
+			dup2(in[0], 0);
+			close(in[0]);
+		}
 
-// 		if (out != NULL)
-// 		{
-// 			// printf("[%d]%s outputing to %ld\n", getpid(), t->argv[0], out);
-// 			close(out[0]);
-// 			dup2(out[1], 1);
-// 			close(out[1]);
-// 		}
+		if (out != NULL)
+		{
+			// printf("[%d]%s outputing to %ld\n", getpid(), t->argv[0], out);
+			close(out[0]);
+			dup2(out[1], 1);
+			close(out[1]);
+		}
 
-// 		// printf("[%d]gonna execute: ", getpid());
-// 		// int i;
-// 		// for (i = 0; t->argv[i] != NULL; i++)
-// 		// 	printf("'%s' ", t->argv[i]);
-// 		// printf("\n");
+		// printf("[%d]gonna execute: ", getpid());
+		// int i;
+		// for (i = 0; t->argv[i] != NULL; i++)
+		// 	printf("'%s' ", t->argv[i]);
+		// printf("\n");
 
-// 		if (execvp(t->argv[0], t->argv) == -1)
-// 		{
-// 			fprintf(stderr, "%s on execvp(%s,...)\n",
-// 				strerror(errno), t->argv[0]);
-// 			// exit(1);
-// 		}
-// 		// error if it reaches this
-// 		// return 1;
-// 		exit(1);
-// 	}
-// 	else
-// 	{
-// 		// parent
-// 		if (in == NULL && out == NULL)
-// 		{
-// 			printf("executed without any redirects\n");
-// 			int exitstatus;
-// 			wait(&exitstatus);
-// 			exitstatus = WEXITSTATUS(exitstatus);
-// 			printf("exited with value %d\n", exitstatus);
-// 			return exitstatus;
-// 		}
-// 		else
-// 			return 0; // don't wait yet
-// 		// wait(0);
-// 	}
-// 	return -1;	// should never reach this
-// }
+		if (execvp(argv[0], argv) == -1)
+		{
+			fprintf(stderr, "%s on execvp(%s,...)\n",
+				strerror(errno), argv[0]);
+			// exit(1);
+		}
+		// error if it reaches this
+		// return 1;
+		exit(1);
+	}
+	else
+	{
+		// parent
+		if (in == NULL && out == NULL)
+		{
+			// printf("executed without any redirects\n");
+			int exitstatus;
+			wait(&exitstatus);
+			exitstatus = WEXITSTATUS(exitstatus);
+			printf("exited with value %d\n", exitstatus);
+			return exitstatus;
+		}
+		else
+			return 0; // don't wait yet
+		// wait(0);
+	}
+	return -1;	// should never reach this
+}
 
-// void pipecommands(Cmds *commands)
-// {
-// 	pid_t cpid;
-// 	int status, i;
-// 	int fdArray[50][2];
+void pipecommands(Cmd *commands)
+{
+	pid_t cpid;
+	int status;
+	int fdArray[50][2];
+	// int fd[2];
+	int *prevPipe = NULL;
+	int i = 0;
 
-// 	for (i = 0; i < commands->count - 1; i++)
-// 	{
-// 		printf("making pipe %d\n", i);
-// 		pipe(fdArray[i]);
-// 	}
+	// for (i = 0; i < commands->count - 1; i++)
+	// {
+	// 	printf("making pipe %d\n", i);
+	// 	pipe(fdArray[i]);
+	// }
 
-// 	for (i = 0; i < commands->count; i++)
-// 	{
-// 		int *pipeIn = NULL;
-// 		int *pipeOut = NULL;
+	Cmd *currentCmd = commands;
+	for (; currentCmd != NULL; currentCmd = currentCmd->next)
+	{
+		int *pipeIn = prevPipe;
+		int *pipeOut = NULL;
 
-// 		if (i != 0)
-// 			pipeIn = fdArray[i - 1];
+		// if (i != 0)
+		// 	pipeIn = fdArray[i - 1];
 
-// 		if (i != commands->count - 1)
-// 			pipeOut = fdArray[i];
+		if (currentCmd->next != NULL)
+		{
+			pipe(fdArray[i++]);
+			pipeOut = fdArray[i];
+		}
 
-// 		printf("callprogram %s with pipeIn: %ld (pipeArray[%d]), pipeOut: %ld (pipeArray[%d])\n",
-// 			commands->tokens[i]->argv[0], pipeIn, i - 1, pipeOut, i);
-// 		callprogram(commands->tokens[i], pipeIn, pipeOut);
+		// printf("callprogram %s with pipeIn: %ld (pipeArray[%d]), pipeOut: %ld (pipeArray[%d])\n",
+		// 	commands->tokens[i]->argv[0], pipeIn, i - 1, pipeOut, i);
+		callprogram(currentCmd->argv, pipeIn, pipeOut);
 
-// 		if (i - 1 >= 0)
-// 		{
-// 			printf("closing pipe %d\n", i);
-// 			close(fdArray[i-1][0]);
-// 			close(fdArray[i-1][1]);
-// 		}
-// 	}
+		if (pipeIn != NULL)
+		{
+			printf("closing pipe %d\n", i);
+			close(pipeIn[0]);
+			close(pipeIn[1]);
+		}
 
-// 	// for (i = 0; i < commands->count - 1; i++)
-// 	// {
-// 	// 	close(fdArray[i][0]);
-// 	// 	close(fdArray[i][1]);
-// 	// }
+		pipeIn = pipeOut;
+	}
 
-// 	while ((cpid = wait(&status)) != -1)
-// 		printf("child %d exits with %d\n", cpid, WEXITSTATUS(status));
-// }
+	while ((cpid = wait(&status)) != -1)
+		printf("child %d exits with %d\n", cpid, WEXITSTATUS(status));
+}
 
 int main(int argc, char **argv)
 {
@@ -275,38 +285,40 @@ int main(int argc, char **argv)
 		if (strncmp(command, "exit", 4) == 0)
 			builtinCommands[1](0, NULL);
 		// else if (strcmp(command, "cd") == 0)
-			// builtinCommands[0]()
+		// 	builtinCommands[0]()
 		else
 		{
 			Cmd *commands = tokenize(command);
 
+			if (commands == NULL)
+				continue;
+
 			Cmd *currentCmd = commands;
-			for (; currentCmd != NULL; currentCmd = currentCmd->next)
+			// for (; currentCmd != NULL; currentCmd = currentCmd->next)
+			// {
+			// 	printf("args for %s: ", currentCmd->argv[0]);
+			// 	int i;
+			// 	for (i = 0; currentCmd->argv[i] != NULL; i++)
+			// 		printf("'%s' ", currentCmd->argv[i]);
+			// 	printf("\n");
+			// }
+
+
+			if (currentCmd->next == NULL)
 			{
-				printf("args for %s: ", currentCmd->argv[0]);
-				int i;
-				for (i = 0; currentCmd->argv[i] != NULL; i++)
-					printf("'%s' ", currentCmd->argv[i]);
-				printf("\n");
+				// printf("only one command\n");
+				callprogram(currentCmd->argv, NULL, NULL);
 			}
-
-			CmdListDestroy(commands);
-
-			// if (commands->count == 1)
-			// {
-			// 	printf("only one command\n");
-			// 	callprogram(commandsArray[0], NULL, NULL);
-			// }
-			// else
-			// {
-			// 	printf("such here\n");
-			// 	pipecommands(commandsArray);
-			// 	// printf("pipe commands exited with value %d\n", exitval);
-			// }
+			else
+			{
+				// printf("such here\n");
+				pipecommands(commands);
+				// printf("pipe commands exited with value %d\n", exitval);
+			}
 			 
 			// free(t);
 
-			
+			CmdListDestroy(commands);
 		}
 	}
 	printf("\n");
