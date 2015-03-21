@@ -1,15 +1,11 @@
-#ifndef MYSHELL_H
-#define MYSHELL_H
+#ifndef SHELL_H
+#define SHELL_H
 
-typedef struct token {
-	int argc;
+typedef struct command
+{
 	char **argv;
-	// int isPipe;
-} Token;
-
-typedef struct commands {
-	Token **tokens;
-	int count;
-} Cmds;
+	// int argc;
+	struct command *next;
+} Cmd;
 
 #endif

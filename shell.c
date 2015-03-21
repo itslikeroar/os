@@ -20,86 +20,143 @@ int myexit(int argc, char *argv[])
 		exit(0);
 }
 
-Token *TokenCreate()
+Cmd *CmdCreate()
 {
-	Token *t = (Token*)malloc(sizeof(Token));
-	t->argv = (char**)malloc(sizeof(char*) * 50);
-	t->argv[0] = (char*)malloc(sizeof(char) * 100);
-	t->argv[1] = NULL;
-	return t;
+	Cmd *newcmd = (Cmd*)malloc(sizeof(Cmd));
+	newcmd->argv = (char**)malloc(sizeof(char*) * 50);
+	newcmd->argv[0] = NULL;
+	// newcmd->argc = 0;
+	newcmd->next = NULL;
+	return newcmd;
 }
 
-Cmds *CommandsCreate()
+void CmdDestroy(Cmd *p)
 {
-	Cmds *commands = (Cmds*)malloc(sizeof(Cmds));
-	commands->tokens = (Token**)malloc(sizeof(Token*) * 50);
-	commands->count = 0;
-	return commands;
+	if (p != NULL)
+	{
+		if (p->argv != NULL)
+			free(p->argv);
+		free(p);
+	}
 }
 
-Cmds *tokenize(const char *string)
+void CmdListDestroy(Cmd *p)
 {
-	Cmds *commands = CommandsCreate();
-	// Token **tokenArray = (Token**)malloc(sizeof(Token*) * 50);
-	Token **tokenArray = commands->tokens;
-	tokenArray[0] = TokenCreate();
-	Token *currentToken = tokenArray[0];
+	if (p != NULL)
+	{
+		Cmd *n = p->next;
 
-	// isQuoted = 0;
+		if (p->argv != NULL)
+			free(p->argv);
+		free(p);
 
-	currentToken->argc = 0;
-	int tokenNum = 0;
+		CmdListDestroy(n);
+	}
+}
 
-	char *currentString = currentToken->argv[0];
-	int currentStringPosition = 0;
+Cmd *tokenize(char string[])
+{
+	Cmd *commands = CmdCreate();
+	Cmd *currentCmd = commands;
+	int argNum = 0;
+	char quoted = 0;	// 0 = not quoted, '\'' = single, '"' = double
 
-	int stringIsTerminated = 0;
+	// saving this since adding null characters
+	// will cause this to change
+	int length = strlen(string);
+	int stringIsStarted = 0;
+	int stringIsTerminated = 1;
 
 	int i;
-	for (i = 0; i <= strlen(string); i++)
+	for (i = 0; i < length; i++)
 	{
-		if (string[i] != ' ' && string[i] != '|' && string[i] != '\n' && string[i] != '\0')
-		{
-			if (stringIsTerminated)
-			{
-				currentToken->argv[currentToken->argc] = (char*)malloc(sizeof(char) * 100);
-				currentString = currentToken->argv[currentToken->argc];
-				stringIsTerminated = 0;
-			}
+		if (string[i] == '\0')
+			break;
 
-			currentString[currentStringPosition++] = string[i];
+		if (argNum >= 50)
+		{
+			fprintf(stderr, "Error: Too many arguments\n");
+			CmdListDestroy(commands);
+			return NULL;
+		}
+
+		// printf("on char: %c, argnum: %d\n", string[i], argNum);
+		if (quoted == 0)
+		{
+			if (string[i] != '\'' && string[i] != '"' && string[i] != ' ' && string[i] != '|' && string[i] != '\n' && string[i] != '\0')
+			{
+				if (stringIsTerminated)
+				{
+					currentCmd->argv[argNum++] = string + i;
+					stringIsTerminated = 0;
+					currentCmd->argv[argNum] = NULL;
+				}
+			}
+			else
+			{
+				if (string[i] == '\'')
+				{
+					quoted = '\'';
+					stringIsStarted = 0;
+				}
+				else if (string[i] == '"')
+				{
+					quoted = '"';
+					stringIsStarted = 0;
+				}
+				else if (string[i] == '|')
+				{
+					if (argNum == 0)
+					{
+						fprintf(stderr, "Error: Piping without command\n");
+						CmdListDestroy(commands);
+						return NULL;
+					}
+					
+					currentCmd->next = CmdCreate();
+					currentCmd = currentCmd->next;
+					argNum = 0;
+					stringIsTerminated = 1;
+				}
+				else
+					stringIsTerminated = 1;
+
+				string[i] = '\0';
+			}
 		}
 		else
 		{
-			if (currentStringPosition > 0)
+			// printf("%c is in quote %c\n", string[i], quoted);
+			if (string[i] == quoted)
 			{
-				currentString[currentStringPosition] = '\0';
-				currentToken->argc++;
-				currentStringPosition = 0;
-
-				// printf("terminated string: '%s'\n", currentString);
-
-				if (string[i] != '\0' && string[i] != '\n')
-				{
-					stringIsTerminated = 1;
-					// currentToken->argv[currentToken->argc] = (char*)malloc(sizeof(char) * 100);
-					// currentString = currentToken->argv[currentToken->argc];
-				}
+				string[i] = '\0';
+				quoted = 0;
+				stringIsTerminated = 1;
+				stringIsStarted = 0;
 			}
-
-			if (string[i] == '|')
+			else if (stringIsStarted == 0)
 			{
-				currentToken->argv[currentToken->argc] = NULL;
-				tokenArray[++tokenNum] = TokenCreate();
-				currentToken = tokenArray[tokenNum];
+				currentCmd->argv[argNum++] = string + i;
+				stringIsStarted = 1;
+				// stringIsTerminated = 1;
+				currentCmd->argv[argNum] = NULL;
 			}
 		}
 	}
 
-	currentToken->argv[currentToken->argc] = NULL;
-	tokenArray[tokenNum + 1] = NULL;
+	if (quoted != 0)
+	{
+		fprintf(stderr, "Error: missmatched quotes\n");
+		CmdListDestroy(commands);
+		return NULL;
+	}
 
-	commands->count = tokenNum + 1;
+	if (argNum == 0)
+	{
+		fprintf(stderr, "Error: Not enough arguments\n");
+		CmdListDestroy(commands);
+		return NULL;
+	}
 
 	return commands;
 }
@@ -109,13 +166,13 @@ int (*builtinCommands[])(int argc, char **argv) = {
 	[1] myexit,
 };
 
-int callprogram(Token *t, int in[2], int out[2])
+int callprogram(char *argv[], int in[2], int out[2])
 {
 	pid_t cpid = fork();
 
 	if (cpid == -1)
 	{
-		fprintf(stderr, "failed to fork on %s\n", t->argv[0]);
+		fprintf(stderr, "failed to fork on %s\n", argv[0]);
 		return 1;
 	}
 	else if (cpid == 0)
@@ -143,10 +200,10 @@ int callprogram(Token *t, int in[2], int out[2])
 		// 	printf("'%s' ", t->argv[i]);
 		// printf("\n");
 
-		if (execvp(t->argv[0], t->argv) == -1)
+		if (execvp(argv[0], argv) == -1)
 		{
 			fprintf(stderr, "%s on execvp(%s,...)\n",
-				strerror(errno), t->argv[0]);
+				strerror(errno), argv[0]);
 			// exit(1);
 		}
 		// error if it reaches this
@@ -158,7 +215,7 @@ int callprogram(Token *t, int in[2], int out[2])
 		// parent
 		if (in == NULL && out == NULL)
 		{
-			// printf("executed without any pipes\n");
+			// printf("executed without any redirects\n");
 			int exitstatus;
 			wait(&exitstatus);
 			exitstatus = WEXITSTATUS(exitstatus);
@@ -172,19 +229,23 @@ int callprogram(Token *t, int in[2], int out[2])
 	return -1;	// should never reach this
 }
 
-void pipecommands(Cmds *commands)
+void pipecommands(Cmd *commands)
 {
 	pid_t cpid;
-	int status, i;
+	int status;
 	int fdArray[50][2];
+	// int fd[2];
+	// int *prevPipe = NULL;
+	int i = 0;
 
-	for (i = 0; i < commands->count - 1; i++)
-	{
-		// printf("making pipe %d\n", i);
-		pipe(fdArray[i]);
-	}
+	// for (i = 0; i < commands->count - 1; i++)
+	// {
+	// 	printf("making pipe %d\n", i);
+	// 	pipe(fdArray[i]);
+	// }
 
-	for (i = 0; i < commands->count; i++)
+	Cmd *currentCmd = commands;
+	for (; currentCmd != NULL; currentCmd = currentCmd->next)
 	{
 		int *pipeIn = NULL;
 		int *pipeOut = NULL;
@@ -192,26 +253,26 @@ void pipecommands(Cmds *commands)
 		if (i != 0)
 			pipeIn = fdArray[i - 1];
 
-		if (i != commands->count - 1)
+		if (currentCmd->next != NULL)
+		{
+			pipe(fdArray[i]);
 			pipeOut = fdArray[i];
+			i++;
+		}
 
 		// printf("callprogram %s with pipeIn: %ld (pipeArray[%d]), pipeOut: %ld (pipeArray[%d])\n",
 		// 	commands->tokens[i]->argv[0], pipeIn, i - 1, pipeOut, i);
-		callprogram(commands->tokens[i], pipeIn, pipeOut);
+		callprogram(currentCmd->argv, pipeIn, pipeOut);
 
-		if (i - 1 >= 0)
+		if (pipeIn != NULL)
 		{
 			// printf("closing pipe %d\n", i);
-			close(fdArray[i-1][0]);
-			close(fdArray[i-1][1]);
+			close(pipeIn[0]);
+			close(pipeIn[1]);
 		}
-	}
 
-	// for (i = 0; i < commands->count - 1; i++)
-	// {
-	// 	close(fdArray[i][0]);
-	// 	close(fdArray[i][1]);
-	// }
+		pipeIn = pipeOut;
+	}
 
 	while ((cpid = wait(&status)) != -1)
 		printf("child %d exits with %d\n", cpid, WEXITSTATUS(status));
@@ -219,35 +280,36 @@ void pipecommands(Cmds *commands)
 
 int main(int argc, char **argv)
 {
-	char command[200];
-	while (printf("$ "), fgets(command, 200, stdin))
+	char command[512];
+	while (printf("$ "), fgets(command, 512, stdin))
 	{
 		// start parsing through the command
 		if (strncmp(command, "exit", 4) == 0)
 			builtinCommands[1](0, NULL);
 		// else if (strcmp(command, "cd") == 0)
-			// builtinCommands[0]()
+		// 	builtinCommands[0]()
 		else
 		{
-			Cmds *commands = tokenize(command);
-			// printf("commands->count: %d\n", commands->count);
-			Token **tokenArray = commands->tokens;
-			// int exitval;
+			Cmd *commands = tokenize(command);
 
-			// int i;
-			// for (i = 0; i < commands->count; i++)
+			if (commands == NULL)
+				continue;
+
+			// Cmd *currentCmd = commands;
+			// for (; currentCmd != NULL; currentCmd = currentCmd->next)
 			// {
-			// 	printf("token %s:", tokenArray[i]->argv[0]);
-			// 	int j;
-			// 	for (j = 0; tokenArray[i]->argv[j] != NULL; j++)
-			// 		printf("'%s'", tokenArray[i]->argv[j]);
+			// 	printf("args for %s: ", currentCmd->argv[0]);
+			// 	int i;
+			// 	for (i = 0; currentCmd->argv[i] != NULL; i++)
+			// 		printf("'%s' ", currentCmd->argv[i]);
 			// 	printf("\n");
 			// }
 
-			if (commands->count == 1)
+
+			if (commands->next == NULL)
 			{
 				// printf("only one command\n");
-				callprogram(tokenArray[0], NULL, NULL);
+				callprogram(commands->argv, NULL, NULL);
 			}
 			else
 			{
@@ -258,7 +320,7 @@ int main(int argc, char **argv)
 			 
 			// free(t);
 
-			
+			CmdListDestroy(commands);
 		}
 	}
 	printf("\n");
