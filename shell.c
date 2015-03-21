@@ -1,3 +1,14 @@
+/*
+*
+* Operating Systems: CS416 Assignment 5
+* 
+* Group Members:
+* Rodrigo Pacheco
+* Brian Yoo
+* Sisheng Zhang
+* 
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -270,8 +281,6 @@ void pipecommands(Cmd *commands)
 			close(pipeIn[0]);
 			close(pipeIn[1]);
 		}
-
-		pipeIn = pipeOut;
 	}
 
 	while ((cpid = wait(&status)) != -1)
