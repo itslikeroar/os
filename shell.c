@@ -116,6 +116,7 @@ Cmd *tokenize(char string[])
 					currentCmd->next = CmdCreate();
 					currentCmd = currentCmd->next;
 					argNum = 0;
+					stringIsTerminated = 1;
 				}
 				else
 					stringIsTerminated = 1;
@@ -234,7 +235,7 @@ void pipecommands(Cmd *commands)
 	int status;
 	int fdArray[50][2];
 	// int fd[2];
-	int *prevPipe = NULL;
+	// int *prevPipe = NULL;
 	int i = 0;
 
 	// for (i = 0; i < commands->count - 1; i++)
@@ -246,16 +247,17 @@ void pipecommands(Cmd *commands)
 	Cmd *currentCmd = commands;
 	for (; currentCmd != NULL; currentCmd = currentCmd->next)
 	{
-		int *pipeIn = prevPipe;
+		int *pipeIn = NULL;
 		int *pipeOut = NULL;
 
-		// if (i != 0)
-		// 	pipeIn = fdArray[i - 1];
+		if (i != 0)
+			pipeIn = fdArray[i - 1];
 
 		if (currentCmd->next != NULL)
 		{
-			pipe(fdArray[i++]);
+			pipe(fdArray[i]);
 			pipeOut = fdArray[i];
+			i++;
 		}
 
 		// printf("callprogram %s with pipeIn: %ld (pipeArray[%d]), pipeOut: %ld (pipeArray[%d])\n",
@@ -264,7 +266,7 @@ void pipecommands(Cmd *commands)
 
 		if (pipeIn != NULL)
 		{
-			printf("closing pipe %d\n", i);
+			// printf("closing pipe %d\n", i);
 			close(pipeIn[0]);
 			close(pipeIn[1]);
 		}
@@ -293,7 +295,7 @@ int main(int argc, char **argv)
 			if (commands == NULL)
 				continue;
 
-			Cmd *currentCmd = commands;
+			// Cmd *currentCmd = commands;
 			// for (; currentCmd != NULL; currentCmd = currentCmd->next)
 			// {
 			// 	printf("args for %s: ", currentCmd->argv[0]);
@@ -304,10 +306,10 @@ int main(int argc, char **argv)
 			// }
 
 
-			if (currentCmd->next == NULL)
+			if (commands->next == NULL)
 			{
 				// printf("only one command\n");
-				callprogram(currentCmd->argv, NULL, NULL);
+				callprogram(commands->argv, NULL, NULL);
 			}
 			else
 			{
