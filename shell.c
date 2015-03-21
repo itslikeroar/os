@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
+#include "shell.h"
 
 int cd(int argc, char **argv)
 {
@@ -19,85 +20,137 @@ int myexit(int argc, char *argv[])
 		exit(0);
 }
 
-int tokenize(char *commands[50][50], char string[])
+Cmd *CmdCreate()
 {
-	int commandNum = 0;
+	Cmd *newcmd = (Cmd*)malloc(sizeof(Cmd));
+	newcmd->argv = (char**)malloc(sizeof(char*) * 50);
+	newcmd->argv[0] = NULL;
+	newcmd->argc = 0;
+	newcmd->next = NULL;
+	return newcmd;
+}
+
+void CmdDestroy(Cmd *p)
+{
+	if (p != NULL)
+	{
+		if (p->argv != NULL)
+			free(p->argv);
+		free(p);
+	}
+}
+
+void CmdListDestroy(Cmd *p)
+{
+	if (p != NULL)
+	{
+		Cmd *n = p->next;
+
+		if (p->argv != NULL)
+			free(p->argv);
+		free(p);
+
+		CmdListDestroy(n);
+	}
+}
+
+Cmd *tokenize(char string[])
+{
+	Cmd *commands = CmdCreate();
+	Cmd *currentCmd = commands;
 	int argNum = 0;
-	int lastArgStart = 0;
-	// int argLen = 0;
-	int quoted = 0;	// 0 = not quoted, 1 = single, 2 = double
+	char quoted = 0;	// 0 = not quoted, '\'' = single, '"' = double
 
 	// saving this since adding null characters
 	// will cause this to change
 	int length = strlen(string);
-
-	commands[0][0] = NULL;	// initializing argv[0]
-	// *commands[0] = NULL;		// initializing commandsArray[0]
+	int stringIsStarted = 0;
+	int stringIsTerminated = 1;
 
 	int i;
 	for (i = 0; i < length; i++)
 	{
+		if (string[i] == '\0')
+			break;
+
+		// printf("on char: %c, argnum: %d\n", string[i], argNum);
 		if (quoted == 0)
 		{
-			if (string[i] == '\'')
-				quoted = 1;
-			else if (string[i] == '"')
-				quoted = 2;
-			else if (string[i] == '|')
+			if (string[i] != '\'' && string[i] != '"' && string[i] != ' ' && string[i] != '|' && string[i] != '\n' && string[i] != '\0')
 			{
-				if (*commands[commandNum] == NULL)
+				if (stringIsTerminated)
 				{
-					perror("piping without command\n");
-					return -1;
+					currentCmd->argv[argNum++] = string + i;
+					stringIsTerminated = 0;
+					currentCmd->argv[argNum] = NULL;
 				}
-
-				string[i] = '\0';
-				commands[commandNum++][++argNum] = NULL;
-				argNum = 0;
 			}
-			else if (string[i] == '\n' || string[i] == ' ')
-				string[i] = '\0';
 			else
 			{
-				if (commands[commandNum][argNum] == NULL)
+				if (string[i] == '\'')
 				{
-					printf("commands[%d][%d] = %s\n", commandNum, argNum, string + i);
-					commands[commandNum][argNum] = string + i;
-					lastArgStart = i;
-					commands[commandNum][argNum + 1] = NULL;
+					quoted = '\'';
+					stringIsStarted = 0;
 				}
-				else if (strlen(commands[commandNum][argNum]) < i - lastArgStart)
+				else if (string[i] == '"')
 				{
-					commands[commandNum][argNum] = string + i;
-					lastArgStart = i;
-					commands[commandNum][argNum + 1] = NULL;;
+					quoted = '"';
+					stringIsStarted = 0;
 				}
+				else if (string[i] == '|')
+				{
+					if (argNum == 0)
+					{
+						fprintf(stderr, "Piping without command\n");
+						CmdListDestroy(commands);
+						return NULL;
+					}
+					
+					currentCmd->next = CmdCreate();
+					currentCmd = currentCmd->next;
+					argNum = 0;
+				}
+				else
+					stringIsTerminated = 1;
+
+				string[i] = '\0';
 			}
 		}
-		else if (quoted == 1 && string[i] == '\'')
+		else
 		{
-			string[i] = '\0';
-			argNum++;
-			quoted = 0;
-		}
-		else if (quoted == 2 && string[i] == '"')
-		{
-			string[i] = '\0';
-			argNum++;
-			quoted = 0;
+			// printf("%c is in quote %c\n", string[i], quoted);
+			if (string[i] == quoted)
+			{
+				string[i] = '\0';
+				quoted = 0;
+				stringIsTerminated = 1;
+				stringIsStarted = 0;
+			}
+			else if (stringIsStarted == 0)
+			{
+				currentCmd->argv[argNum++] = string + i;
+				stringIsStarted = 1;
+				// stringIsTerminated = 1;
+				currentCmd->argv[argNum] = NULL;
+			}
 		}
 	}
 
 	if (quoted != 0)
 	{
-		perror("missmatched quotes\n");
-		return -1;
+		fprintf(stderr, "missmatched quotes\n");
+		CmdListDestroy(commands);
+		return NULL;
 	}
 
-	commands[commandNum][++argNum] = NULL;
-	// *commands[++commandNum] = NULL;
+	if (argNum == 0)
+	{
+		fprintf(stderr, "Not enough arguments\n");
+		CmdListDestroy(commands);
+		return NULL;
+	}
 
-	return commandNum + 1;
+	return commands;
 }
 
 int (*builtinCommands[])(int argc, char **argv) = {
@@ -215,8 +268,8 @@ int (*builtinCommands[])(int argc, char **argv) = {
 
 int main(int argc, char **argv)
 {
-	char command[200];
-	while (printf("$ "), fgets(command, 200, stdin))
+	char command[512];
+	while (printf("$ "), fgets(command, 512, stdin))
 	{
 		// start parsing through the command
 		if (strncmp(command, "exit", 4) == 0)
@@ -225,21 +278,19 @@ int main(int argc, char **argv)
 			// builtinCommands[0]()
 		else
 		{
-			char *commandsArray[50][50];
-			// memset(commandsArray, 0, sizeof(char) * 50 * 50 * 50);
+			Cmd *commands = tokenize(command);
 
-			int numCommands = tokenize(commandsArray, command);
-			printf("number of commands: %d\n", numCommands);
-
-			int i;
-			for (i = 0; i < numCommands; i++)
+			Cmd *currentCmd = commands;
+			for (; currentCmd != NULL; currentCmd = currentCmd->next)
 			{
-				printf("args for %s: ", commandsArray[i][0]);
-				int j;
-				for (j = 0; commandsArray[i][j] != NULL; j++)
-					printf("'%s' ", commandsArray[i][j]);
+				printf("args for %s: ", currentCmd->argv[0]);
+				int i;
+				for (i = 0; currentCmd->argv[i] != NULL; i++)
+					printf("'%s' ", currentCmd->argv[i]);
 				printf("\n");
 			}
+
+			CmdListDestroy(commands);
 
 			// if (commands->count == 1)
 			// {
