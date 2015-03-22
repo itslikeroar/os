@@ -26,7 +26,7 @@
 typedef struct command
 {
 	char **argv;
-	// int argc;
+	int argc;
 	struct command *next;
 } Cmd;
 

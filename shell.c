@@ -10,53 +10,29 @@
 */
 #include "shell.h"
 #define homeDirectory getenv("HOME")
-char* path = NULL;
-
-char* concat(char *s1, char *s2)
-{
-    char* result = (char*)malloc(strlen(s1) + strlen(s2) + 1);
-    strcpy(result, s1);
-    strcpy(result, s2);
-    return result;
-}
-
+char path[100];
 
 int cd(int argc, char **argv)
 {
-    DIR *dp;
-    char* result = NULL;
-    char* newPath = path;
-    char* slashes = argv[1];
-    int i;
-    for(i = 0; i < strlen(slashes) + 1; i++)
-    {
-        if(slashes[i] == '/')
-        {
-            if((dp = opendir(argv[1])) == NULL)
-            {
-                printf("Directory not found\n");
-                return -1;
-            }
-            else
-            {
-                chdir(argv[1]);
-                path = argv[1];
-                return 1;
-            }
-        }
-    }
-    if((dp = opendir(argv[1])) == NULL)
-    {
-        printf("Directory not found\n");
-        return -1;
-    }
+    char *dir = NULL;
+    if (argc == 1)
+        dir = homeDirectory;
+    else if (argc == 2)
+        dir = argv[1];
     else
     {
-        chdir(argv[1]);
-        result = concat(newPath, concat("/", argv[1]));
-        path = result;
+        fprintf(stdout, "Error: Too many arguments.\n");
         return 1;
     }
+
+    if (chdir(dir) == 0)
+        getcwd(path, 100);
+    else
+    {
+        fprintf(stderr, "%s\n", strerror(errno));
+        return 1;
+    }
+
     return 0;
 }
 
@@ -73,7 +49,7 @@ Cmd *CmdCreate()
     Cmd *newcmd = (Cmd*)malloc(sizeof(Cmd));
     newcmd->argv = (char**)malloc(sizeof(char*) * 50);
     newcmd->argv[0] = NULL;
-    // newcmd->argc = 0;
+    newcmd->argc = 0;
     newcmd->next = NULL;
     return newcmd;
 }
@@ -160,7 +136,8 @@ Cmd *tokenize(char string[])
                         CmdListDestroy(commands);
                         return NULL;
                     }
-                    
+
+                    currentCmd->argc = argNum + 1;
                     currentCmd->next = CmdCreate();
                     currentCmd = currentCmd->next;
                     argNum = 0;
@@ -205,6 +182,9 @@ Cmd *tokenize(char string[])
         CmdListDestroy(commands);
         return NULL;
     }
+
+    if (currentCmd->argc != argNum)
+        currentCmd->argc = argNum;
 
     return commands;
 }
@@ -327,7 +307,7 @@ void pipecommands(Cmd *commands)
 int main(int argc, char **argv)
 {
     char command[512];
-    path = homeDirectory;
+    getcwd(path, 100);
     while (printf("%s$ ", path), fgets(command, 512, stdin))
     {
         Cmd *commands = tokenize(command);
@@ -335,52 +315,26 @@ int main(int argc, char **argv)
         if (commands == NULL)
             continue;
 
+        // Cmd *currentCmd = commands;
+        // for (; currentCmd != NULL; currentCmd = currentCmd->next)
+        // {
+        //  printf("%d args for %s: ", currentCmd->argc, currentCmd->argv[0]);
+        //  int i;
+        //  for (i = 0; currentCmd->argv[i] != NULL; i++)
+        //      printf("'%s' ", currentCmd->argv[i]);
+        //  printf("\n");
+        // }
+
         // start parsing through the command
         if (strcmp(commands->argv[0], "exit") == 0)
             builtinCommands[1](0, NULL);
-        // else if (strcmp(command, "cd") == 0)
-        //  builtinCommands[0]()
-        else if(strcmp(commands->argv[0], "cd") == 0)
-        {
-            if (commands->argv[1] == NULL)
-            {
-                path = homeDirectory;
-                chdir(homeDirectory);
-            }
-            else if (commands->argv[1] != NULL && commands->argv[2] == NULL)
-                builtinCommands[0](2, commands->argv);
-            else
-                fprintf(stdout, "Error: Too many arguments.\n");
-        }
+        else if (strcmp(commands->argv[0], "cd") == 0)
+            builtinCommands[0](commands->argc, commands->argv);
+        else if (commands->next == NULL)
+            callprogram(commands->argv, NULL, NULL);
         else
-        {
-            // Cmd *commands = tokenize(command);
+            pipecommands(commands);
 
-            // Cmd *currentCmd = commands;
-            // for (; currentCmd != NULL; currentCmd = currentCmd->next)
-            // {
-            //  printf("args for %s: ", currentCmd->argv[0]);
-            //  int i;
-            //  for (i = 0; currentCmd->argv[i] != NULL; i++)
-            //      printf("'%s' ", currentCmd->argv[i]);
-            //  printf("\n");
-            // }
-
-
-            if (commands->next == NULL)
-            {
-                // printf("only one command\n");
-                callprogram(commands->argv, NULL, NULL);
-            }
-            else
-            {
-                // printf("such here\n");
-                pipecommands(commands);
-                // printf("pipe commands exited with value %d\n", exitval);
-            }
-             
-            // free(t);
-        }
         CmdListDestroy(commands);
     }
     printf("\n");
