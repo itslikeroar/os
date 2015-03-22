@@ -137,7 +137,7 @@ Cmd *tokenize(char string[])
                         return NULL;
                     }
 
-                    currentCmd->argc = argNum + 1;
+                    currentCmd->argc = argNum;
                     currentCmd->next = CmdCreate();
                     currentCmd = currentCmd->next;
                     argNum = 0;
