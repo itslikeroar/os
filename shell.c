@@ -21,7 +21,7 @@ int cd(int argc, char **argv)
         dir = argv[1];
     else
     {
-        fprintf(stdout, "Error: Too many arguments.\n");
+        fprintf(stdout, "cd: Too many arguments.\n");
         return 1;
     }
 
@@ -107,7 +107,7 @@ Cmd *tokenize(char string[])
         // printf("on char: %c, argnum: %d\n", string[i], argNum);
         if (quoted == 0)
         {
-            if (string[i] != '\'' && string[i] != '"' && string[i] != ' ' && string[i] != '|' && string[i] != '\n' && string[i] != '\0')
+            if (string[i] != '\'' && string[i] != '"' && string[i] != ' ' && string[i] != '\t' && string[i] != '|' && string[i] != '\n' && string[i] != '\0')
             {
                 if (stringIsTerminated)
                 {
@@ -178,8 +178,11 @@ Cmd *tokenize(char string[])
 
     if (argNum == 0)
     {
-        fprintf(stderr, "Error: Not enough arguments\n");
-        CmdListDestroy(commands);
+        if (commands->next != NULL)
+        {
+            fprintf(stderr, "Error: Not enough arguments\n");
+            CmdListDestroy(commands);
+        }
         return NULL;
     }
 
@@ -247,7 +250,7 @@ int callprogram(char *argv[], int in[2], int out[2])
             int exitstatus;
             wait(&exitstatus);
             exitstatus = WEXITSTATUS(exitstatus);
-            printf("exited with value %d\n", exitstatus);
+            printf("process %d exits with %d\n", cpid, exitstatus);
             return exitstatus;
         }
         else
@@ -301,15 +304,22 @@ void pipecommands(Cmd *commands)
     }
 
     while ((cpid = wait(&status)) != -1)
-        printf("child %d exits with %d\n", cpid, WEXITSTATUS(status));
+        printf("process %d exits with %d\n", cpid, WEXITSTATUS(status));
 }
 
 int main(int argc, char **argv)
 {
     char command[512];
     getcwd(path, 100);
-    while (printf("%s$ ", path), fgets(command, 512, stdin))
+
+    while (1)
     {
+        if (isatty(0))  // check if stdin is terminal
+            printf("%s$ ", path);
+
+        if (fgets(command, 512, stdin) == NULL)
+            break;
+
         Cmd *commands = tokenize(command);
 
         if (commands == NULL)
@@ -327,7 +337,7 @@ int main(int argc, char **argv)
 
         // start parsing through the command
         if (strcmp(commands->argv[0], "exit") == 0)
-            builtinCommands[1](0, NULL);
+            builtinCommands[1](commands->argc, commands->argv);
         else if (strcmp(commands->argv[0], "cd") == 0)
             builtinCommands[0](commands->argc, commands->argv);
         else if (commands->next == NULL)
@@ -337,6 +347,7 @@ int main(int argc, char **argv)
 
         CmdListDestroy(commands);
     }
-    printf("\n");
+    if (isatty(0))
+        printf("\n");
     exit(0);
 }
