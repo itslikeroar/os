@@ -20,7 +20,6 @@ char* concat(char *s1, char *s2)
     return result;
 }
 
-
 int cd(int argc, char **argv)
 {
     DIR *dp;
@@ -52,7 +51,9 @@ int cd(int argc, char **argv)
     }
     else
     {
+        printf("hello   %s\n", newPath);
         chdir(argv[1]);
+
         result = concat(newPath, concat("/", argv[1]));
         path = result;
         return 1;
@@ -327,7 +328,9 @@ void pipecommands(Cmd *commands)
 int main(int argc, char **argv)
 {
     char command[512];
-    path = homeDirectory;
+    char cwd[1024];
+    if(getcwd(cwd, sizeof(cwd)) != NULL)
+        path = cwd;
     while (printf("%s$ ", path), fgets(command, 512, stdin))
     {
         Cmd *commands = tokenize(command);
