@@ -8,18 +8,55 @@
 * Sisheng Zhang
 * 
 */
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <errno.h>
 #include "shell.h"
+#define homeDirectory getenv("HOME")
+char* path = NULL;
+
+char* concat(char *s1, char *s2)
+{
+    char* result = (char*)malloc(strlen(s1) + strlen(s2) + 1);
+    strcpy(result, s1);
+    strcpy(result, s2);
+    return result;
+}
+
 
 int cd(int argc, char **argv)
 {
+    DIR *dp;
+    char* result = NULL;
+    char* newPath = path;
+    char* slashes = argv[1];
+    int i;
+    for(i = 0; i < strlen(slashes) + 1; i++)
+    {
+        if(slashes[i] == '/')
+        {
+            if((dp = opendir(argv[1])) == NULL)
+            {
+                printf("Directory not found\n");
+                return -1;
+            }
+            else
+            {
+                chdir(argv[1]);
+                path = argv[1];
+                return 1;
+            }
+        }
+    }
+    if((dp = opendir(argv[1])) == NULL)
+    {
+        printf("Directory not found\n");
+        return -1;
+    }
+    else
+    {
+        chdir(argv[1]);
+        result = concat(newPath, concat("/", argv[1]));
+        path = result;
+        return 1;
+    }
 	return 0;
 }
 
@@ -290,13 +327,27 @@ void pipecommands(Cmd *commands)
 int main(int argc, char **argv)
 {
 	char command[512];
-	while (printf("$ "), fgets(command, 512, stdin))
+    path = homeDirectory;
+	while (printf("%s $: ", path), fgets(command, 512, stdin))
 	{
+        Cmd *commands = tokenize(command);
 		// start parsing through the command
 		if (strncmp(command, "exit", 4) == 0)
 			builtinCommands[1](0, NULL);
 		// else if (strcmp(command, "cd") == 0)
 		// 	builtinCommands[0]()
+        else if(strcmp(commands->argv[0], "cd"))
+        {
+            if(commands->next == NULL)
+            {
+                path = homeDirectory;
+                chdir(homeDirectory);
+            }
+            else if(commands->next != NULL && commands->next->next == NULL)
+            {
+                builtinCommands[0](2, commands->argv);
+            }
+        }
 		else
 		{
 			Cmd *commands = tokenize(command);
