@@ -12,6 +12,13 @@
 #define homeDirectory getenv("HOME")
 char path[100];
 
+/**
+ * cd will change to a given directory
+ * or if it is just called without arguments,
+ * it will change to homeDirectory
+ * if the given directory cannot be changed to,
+ * it will print out an error
+ */
 int cd(int argc, char **argv)
 {
     char *dir = NULL;
@@ -36,14 +43,30 @@ int cd(int argc, char **argv)
     return 0;
 }
 
+/**
+ * myexit will call exit with 0 if no arguments are given,
+ * if one argument is passed, it will call exit with
+ * the argument converted to an int and if there are more
+ * arguments, it will print out an error stating that there
+ * are too many arguments
+ */
 int myexit(int argc, char *argv[])
 {
-    if (argc == 2)
+    if (argc == 1)
+        exit(0);
+    else if (argc == 2)
         exit(atoi(argv[1]));
     else
-        exit(0);
+    {
+        fprintf(stdout, "exit: Too many arguments.\n");
+        return 1;
+    }
 }
 
+/**
+ * mallocs and initializes the space needed for a Cmd struct
+ * returns the malloc'd struct
+ */
 Cmd *CmdCreate()
 {
     Cmd *newcmd = (Cmd*)malloc(sizeof(Cmd));
@@ -54,6 +77,9 @@ Cmd *CmdCreate()
     return newcmd;
 }
 
+/**
+ * frees the memory associated with 
+ */
 void CmdListDestroy(Cmd *p)
 {
     if (p != NULL)
