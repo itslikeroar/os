@@ -78,7 +78,9 @@ Cmd *CmdCreate()
 }
 
 /**
- * frees the memory associated with 
+ * frees the memory associated with a Cmd struct and
+ * follows the next pointers recursively to free up
+ * all the memory of a Cmd list
  */
 void CmdListDestroy(Cmd *p)
 {
@@ -94,6 +96,13 @@ void CmdListDestroy(Cmd *p)
     }
 }
 
+/**
+ * tokenize will take a string array and return a Cmd struct list
+ * each Cmd struct will hold a null terminated array of pointers
+ * to the original string which will serve as argv
+ * if there are more than one Cmd structs in the list, then the
+ * commands will be piped
+ */
 Cmd *tokenize(char string[])
 {
     Cmd *commands = CmdCreate();
@@ -208,11 +217,21 @@ Cmd *tokenize(char string[])
     return commands;
 }
 
+// array of function pointers for built-in commands
 int (*builtinCommands[])(int argc, char **argv) = {
     [0] cd,
     [1] myexit,
 };
 
+/**
+ * call program will run a program using the argv passed
+ * the in and out pointers serve as pointers to pipes which
+ * these should be set to null if no piping is required
+ * if the input needs to be read from a pipe, in should be set
+ * and if the output needs to written to a pipe, out should be set
+ * if either is set, the parent will not wait to allow for the
+ * programs to run concurrently
+ */
 int callprogram(char *argv[], int in[2], int out[2])
 {
     pid_t cpid = fork();
@@ -276,6 +295,10 @@ int callprogram(char *argv[], int in[2], int out[2])
     return -1;  // should never reach this
 }
 
+/**
+ * pipecommands pipe commands that will be read from a
+ * list of Cmd structs
+ */
 void pipecommands(Cmd *commands)
 {
     pid_t cpid;
@@ -323,6 +346,7 @@ void pipecommands(Cmd *commands)
         printf("process %d exits with %d\n", cpid, WEXITSTATUS(status));
 }
 
+// main will only give a promt to the user if stdin is a terminal
 int main(int argc, char **argv)
 {
     char command[512];
