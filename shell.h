@@ -3,9 +3,9 @@
 * Operating Systems: CS416 Assignment 5
 * 
 * Group Members:
-* Rodrigo Pacheco
-* Brian Yoo
-* Sisheng Zhang
+* Rodrigo Pacheco	rap256
+* Brian Yoo			bgy2
+* Sisheng Zhang		sz320
 * 
 */
 
