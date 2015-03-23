@@ -256,10 +256,7 @@ int callprogram(char *argv[], int in[2], int out[2])
         }
 
         if (execvp(argv[0], argv) == -1)
-        {
-            fprintf(stderr, "%s on execvp(%s,...)\n",
-                strerror(errno), argv[0]);
-        }
+            fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));        
         // error if it reaches this
         exit(1);
     }
