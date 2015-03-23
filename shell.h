@@ -23,6 +23,7 @@
 #ifndef SHELL_H
 #define SHELL_H
 
+// holds information necessary to run one or more commands
 typedef struct command
 {
 	char **argv;
