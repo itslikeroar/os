@@ -54,16 +54,6 @@ Cmd *CmdCreate()
     return newcmd;
 }
 
-void CmdDestroy(Cmd *p)
-{
-    if (p != NULL)
-    {
-        if (p->argv != NULL)
-            free(p->argv);
-        free(p);
-    }
-}
-
 void CmdListDestroy(Cmd *p)
 {
     if (p != NULL)
