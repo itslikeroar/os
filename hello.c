@@ -134,7 +134,7 @@ static char *_add(void *x1, void *x2)
     int *a =(int*) x1;
     int *b = (int*) x2;
     static char sum_string[1000];
-    sprintf(sum_string, "%d", *a + *b);
+    sprintf(sum_string, "%d\n", *a + *b);
     return sum_string;
 }
 
@@ -143,7 +143,7 @@ static char *_factor(void *x1, void *x2)
     int *a =(int*) x1;
     int *b = (int*) x2;
     static char sum_string[1000];
-    sprintf(sum_string, "%d", *a + *b);
+    sprintf(sum_string, "%d\n", *a + *b);
     return sum_string;
 }
 
@@ -152,7 +152,7 @@ static char *_fib(void *x1, void *x2)
     int *a =(int*) x1;
     int *b = (int*) x2;
     static char sum_string[1000];
-    sprintf(sum_string, "%d", *a + *b);
+    sprintf(sum_string, "%d\n", *a + *b);
     return sum_string;
 }
 
@@ -161,7 +161,7 @@ static char *_sub(void *x1, void *x2)
     int *a =(int*) x1;
     int *b = (int*) x2;
     static char sum_string[1000];
-    sprintf(sum_string, "%d", *a + *b);
+    sprintf(sum_string, "%d\n", *a + *b);
     return sum_string;
 }
 
@@ -170,7 +170,7 @@ static char *_mul(void *x1, void *x2)
     int *a =(int*) x1;
     int *b = (int*) x2;
     static char sum_string[1000];
-    sprintf(sum_string, "%d", *a + *b);
+    sprintf(sum_string, "%d\n", *a + *b);
     return sum_string;
 }
 
@@ -179,7 +179,7 @@ static char *_div(void *x1, void *x2)
     int *a =(int*) x1;
     int *b = (int*) x2;
     static char sum_string[1000];
-    sprintf(sum_string, "%d", *a + *b);
+    sprintf(sum_string, "%d\n", *a + *b);
     return sum_string;
 }
 
@@ -188,7 +188,7 @@ static char *_exp(void *x1, void *x2)
     int *a =(int*) x1;
     int *b = (int*) x2;
     static char sum_string[1000];
-    sprintf(sum_string, "%d", *a + *b);
+    sprintf(sum_string, "%d\n", *a + *b);
     return sum_string;
 }
 // int sub(int x1, int x2)
@@ -213,6 +213,52 @@ static char *_exp(void *x1, void *x2)
 //     }
 //     return total;
 // }
+
+int find_case(path) {
+    int case_value;
+    int return_value = 0;
+    int i;
+    for (i = 0; i < 7; i++) {
+        if (strcmp(path, folders[i]) == 0) {
+            case_value = 1;
+            break;
+        } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
+            int a, b, numMatched;
+            if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
+                case_value = 2;
+                break;
+            }
+
+            numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a, &b);
+            // printf("%s matched %d\n", path, numMatched);
+
+            if (numMatched == 1) {
+                if (i != 0 && i != 1) {
+                    case_value = 2;
+                } else {
+                    case_value = 4;
+                }
+                break;
+            } else if (numMatched == 2) {
+                if (i == 0 || i == 1) {
+                    // printf("incorrect number of arguments to %s\n", folders[i] + 1);
+                    case_value = 5;
+                } else {
+                    case_value = 6;
+                }
+                break;
+            } else {
+                // printf("wat, numMatched: %d\n", numMatched);
+                case_value = 7;
+                break;
+            }
+        }
+    }
+    return_value = i << 16;
+    return_value += case_value;
+
+    return return_value;
+}
 
 static int hello_getattr(const char *path, struct stat *stbuf)
 {
@@ -270,12 +316,19 @@ static int hello_getattr(const char *path, struct stat *stbuf)
                 }
                 break;
             } else if (numMatched == 2) {
-                char *content = folder_functions[i](&a, &b);
-                // sprintf(temp, "%d", c);
-                stbuf->st_mode = S_IFREG | 0444;
-                stbuf->st_nlink = 1;
-                stbuf->st_size = strlen(content);
-                res = 0;
+                if (i == 0 || i == 1) {
+                    printf("incorrect number of arguments to %s\n", folders[i] + 1);
+                } else {
+                    char *content = folder_functions[i](&a, &b);
+                    // sprintf(temp, "%d", c);
+                    stbuf->st_mode = S_IFREG | 0444;
+                    stbuf->st_nlink = 1;
+                    stbuf->st_size = strlen(content);
+                    res = 0;
+                }
+                break;
+            } else {
+                printf("wat, numMatched: %d\n", numMatched);
                 break;
             }
         }
@@ -298,13 +351,46 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         found = 1;
     }
 
+    // int i;
+    // for (i = 0; i < 7; i++)
+    // {
+    //     if (strcmp(path, folders[i]) == 0)
+    //     {
+    //         filler(buf, doc_path + 1, NULL, 0);
+    //         found = 1;
+    //     }
+    // }
     int i;
-    for (i = 0; i < 7; i++)
-    {
-        if (strcmp(path, folders[i]) == 0)
-        {
+    for (i = 0; i < 7; i++) {
+        if (strcmp(path, folders[i]) == 0) {
             filler(buf, doc_path + 1, NULL, 0);
             found = 1;
+            break;
+        } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
+            int a, b, numMatched;
+            if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
+                break;
+            }
+
+            numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a, &b);
+            // printf("%s matched %d\n", path, numMatched);
+
+            if (numMatched == 1) {
+                if (i != 0 && i != 1) {
+                    found = 1;
+                }
+                break;
+            } else if (numMatched == 2) {
+                if (i == 0 || i == 1) {
+                    printf("incorrect number of arguments to %s\n", folders[i] + 1);
+                } else {
+                    
+                }
+                break;
+            } else {
+                printf("wat, numMatched: %d\n", numMatched);
+                break;
+            }
         }
     }
 
@@ -320,7 +406,7 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 static int hello_open(const char *path, struct fuse_file_info *fi)
 {
-    
+    int retval = -ENOENT;
     if (strcmp(path, hello_path) == 0)
     {
         if ((fi->flags & 3) != O_RDONLY)
@@ -330,35 +416,67 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
 
     // printf("!!!!!!!!!!!!!!!!trying to open: %s\n", path);
 
+    // int i;
+    // for (i = 0; i < 7; i++) {
+    //     if (strncmp(path, folders[i], strlen(folders[i])) == 0)
+    //     {
+    //         if (strcmp(path + strlen(folders[i]), doc_path) != 0)
+    //             continue;
+
+    //         if ((fi->flags & 3) != O_RDONLY)
+    //             return -EACCES;
+
+    //         return 0;
+    //     }
+    // }
+
+    // return -ENOENT;
+    
     int i;
     for (i = 0; i < 7; i++) {
-        if (strncmp(path, folders[i], strlen(folders[i])) == 0)
-        {
-            if (strcmp(path + strlen(folders[i]), doc_path) != 0)
-                continue;
+        if (strcmp(path, folders[i]) == 0) {
+            break;
+        } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
+            int a, b, numMatched;
+            if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
+                retval = 0;
+                break;
+            }
 
-            if ((fi->flags & 3) != O_RDONLY)
-                return -EACCES;
+            numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a, &b);
+            // printf("%s matched %d\n", path, numMatched);
 
-            return 0;
+            if (numMatched == 1) {
+                if (i != 0 && i != 1) {
+
+                } else {
+                    retval = 0;
+                }
+                break;
+            } else if (numMatched == 2) {
+                if (i == 0 || i == 1) {
+                    printf("incorrect number of arguments to %s\n", folders[i] + 1);
+                } else {
+                    retval = 0;
+                }
+                break;
+            } else {
+                printf("wat, numMatched: %d\n", numMatched);
+                break;
+            }
         }
     }
 
-    return -ENOENT;
-    /*
-    if (strcmp(path, hello_path) != 0)
-        return -ENOENT;
-
     if ((fi->flags & 3) != O_RDONLY)
-        return -EACCES;
-    */
-
-    // return 0;
+        retval = -EACCES;
+    
+    return retval;
 }
 
 static int hello_read(const char *path, char *buf, size_t size, off_t offset,
               struct fuse_file_info *fi)
 {
+    int retval = -ENOENT;
     size_t len;
 
     // printf("hello_read: %d\n", path);
@@ -379,13 +497,33 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 
     // printf("\t\ttrying to read: %s\n", path);
 
-    int i = 0;
-    for (i = 0; i < 7; i++)
-    {
-        if (strncmp(path, folders[i], strlen(folders[i])) == 0)
-        {
-            if (strncmp(path + strlen(folders[i]), doc_path, strlen(doc_path)) == 0)
-            {
+    // int i = 0;
+    // for (i = 0; i < 7; i++)
+    // {
+    //     if (strncmp(path, folders[i], strlen(folders[i])) == 0)
+    //     {
+    //         if (strncmp(path + strlen(folders[i]), doc_path, strlen(doc_path)) == 0)
+    //         {
+    //             len = strlen(doc_str[i]);
+    //             if (offset < len)
+    //             {
+    //                 if (offset + size > len)
+    //                     size = len - offset;
+    //                 memcpy(buf, doc_str[i] + offset, size);
+    //             }
+    //             else
+    //                 size = 0;
+    //             return size;
+    //         }
+    //     }
+    // }
+    int i;
+    for (i = 0; i < 7; i++) {
+        if (strcmp(path, folders[i]) == 0) {
+            break;
+        } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
+            int a, b, numMatched;
+            if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
                 len = strlen(doc_str[i]);
                 if (offset < len)
                 {
@@ -395,12 +533,55 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
                 }
                 else
                     size = 0;
-                return size;
+                retval = size;
+                break;
+            }
+
+            numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a, &b);
+            // printf("%s matched %d\n", path, numMatched);
+
+            if (numMatched == 1) {
+                if (i != 0 && i != 1) {
+
+                } else {
+                    char *content = folder_functions[i](&a, &b);
+                    len = strlen(content);
+                    if (offset < len)
+                    {
+                        if (offset + size > len)
+                            size = len - offset;
+                        memcpy(buf, content + offset, size);
+                    }
+                    else
+                        size = 0;
+                    retval = size;
+                }
+                break;
+            } else if (numMatched == 2) {
+                if (i == 0 || i == 1) {
+                    printf("incorrect number of arguments to %s\n", folders[i] + 1);
+                } else {
+                    char *content = folder_functions[i](&a, &b);
+                    len = strlen(content);
+                    if (offset < len)
+                    {
+                        if (offset + size > len)
+                            size = len - offset;
+                        memcpy(buf, content + offset, size);
+                    }
+                    else
+                        size = 0;
+                    retval = size;
+                }
+                break;
+            } else {
+                printf("wat, numMatched: %d\n", numMatched);
+                break;
             }
         }
     }
 
-    return -ENOENT;
+    return retval;
 }
 
 static struct fuse_operations hello_oper = {
