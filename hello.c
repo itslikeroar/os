@@ -257,9 +257,17 @@ static int hello_getattr(const char *path, struct stat *stbuf)
             // printf("%s matched %d\n", path, numMatched);
 
             if (numMatched == 1) {
-                stbuf->st_mode = S_IFDIR | 0755;
-                stbuf->st_nlink = 2;
-                res = 0;
+                if (i != 0 && i != 1) {
+                    stbuf->st_mode = S_IFDIR | 0755;
+                    stbuf->st_nlink = 2;
+                    res = 0;
+                } else {
+                    char *content = folder_functions[i](&a, &b);
+                    stbuf->st_mode = S_IFREG | 0444;
+                    stbuf->st_nlink = 1;
+                    stbuf->st_size = strlen(content);
+                    res = 0;
+                }
                 break;
             } else if (numMatched == 2) {
                 char *content = folder_functions[i](&a, &b);
