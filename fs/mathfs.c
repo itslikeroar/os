@@ -16,19 +16,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
-
-union number {
-	int i;
-	double d;
-};
-
-struct case_info {
-	int case_num;
-	int funct_num;
-	enum {INTEGER, DOUBLE} number_type;
-	union number a;
-	union number b;
-};
+#include "mathfs.h"
 
 static char *doc_path = "/doc";
 static const char *folders[] = {
@@ -49,14 +37,6 @@ static const char *doc_str[] = {
 	"divides\n",
 	"a^b\n"
 };
-
-static char *_factor(struct case_info*);
-static char *_fib(struct case_info*);
-static char *_add(struct case_info*);
-static char *_sub(struct case_info*);
-static char *_mul(struct case_info*);
-static char *_div(struct case_info*);
-static char *_exp(struct case_info*);
 
 static char* (*folder_functions[])(struct case_info*) = {
 	_factor,
@@ -278,6 +258,7 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 	int res = -ENOENT;
 
 	memset(stbuf, 0, sizeof(struct stat));
+	stbuf->st_mtime = stbuf->st_atime = stbuf->st_ctime = time(0);
 	if (strcmp(path, "/") == 0) {
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
