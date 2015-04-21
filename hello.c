@@ -303,108 +303,72 @@ static int hello_getattr(const char *path, struct stat *stbuf)
 
     printf("#####################getattr path: '%s'\n", path);
 
-    // char temp[1000];
-
-    // int i;
-    // for (i = 0; i < 7; i++) {
-    //     if (strcmp(path, folders[i]) == 0) {
+    // switch (current_case.case_num) {
+    //     case 0:
     //         stbuf->st_mode = S_IFDIR | 0755;
     //         stbuf->st_nlink = 2;
     //         res = 0;
     //         break;
-    //     } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
-    //         int a, b, numMatched;
-    //         if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
-    //             stbuf->st_mode = S_IFREG | 0444;
-    //             stbuf->st_nlink = 1;
-    //             stbuf->st_size = strlen(doc_str[i]);
-    //             res = 0;
-    //             break;
-    //         }
-
-    //         numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a, &b);
-    //         // printf("%s matched %d\n", path, numMatched);
-
-    //         if (numMatched == 1) {
-    //             if (i != 0 && i != 1) {
-    //                 stbuf->st_mode = S_IFDIR | 0755;
-    //                 stbuf->st_nlink = 2;
-    //                 res = 0;
-    //             } else {
-    //                 char *content = folder_functions[i](&a, &b);
-    //                 stbuf->st_mode = S_IFREG | 0444;
-    //                 stbuf->st_nlink = 1;
-    //                 stbuf->st_size = strlen(content);
-    //                 res = 0;
-    //             }
-    //             break;
-    //         } else if (numMatched == 2) {
-    //             if (i == 0 || i == 1) {
-    //                 printf("incorrect number of arguments to %s\n", folders[i] + 1);
-    //             } else {
-    //                 char *content = folder_functions[i](&a, &b);
-    //                 // sprintf(temp, "%d", c);
-    //                 stbuf->st_mode = S_IFREG | 0444;
-    //                 stbuf->st_nlink = 1;
-    //                 stbuf->st_size = strlen(content);
-    //                 res = 0;
-    //             }
-    //             break;
-    //         } else {
-    //             printf("wat, numMatched: %d\n", numMatched);
-    //             break;
-    //         }
-    //     }
+    //     case 1:
+    //         stbuf->st_mode = S_IFREG | 0444;
+    //         stbuf->st_nlink = 1;
+    //         stbuf->st_size = strlen(doc_str[current_case.funct_num]);
+    //         res = 0;
+    //         break;
+    //     case 2:
+    //         stbuf->st_mode = S_IFDIR | 0755;
+    //         stbuf->st_nlink = 2;
+    //         res = 0;
+    //         break;
+    //     case 3:
+    //         content = folder_functions[current_case.funct_num](&current_case.a, &current_case.b);
+    //         stbuf->st_mode = S_IFREG | 0444;
+    //         stbuf->st_nlink = 1;
+    //         stbuf->st_size = strlen(content);
+    //         res = 0;
+    //         break;
+    //     case 4:
+    //         printf("incorrect number of arguments to %s\n", folders[current_case.funct_num] + 1);
+    //         break;
+    //     case 5:
+    //         content = folder_functions[current_case.funct_num](&current_case.a, &current_case.b);
+    //         stbuf->st_mode = S_IFREG | 0444;
+    //         stbuf->st_nlink = 1;
+    //         stbuf->st_size = strlen(content);
+    //         res = 0;
+    //         break;
+    //     case 6:
+    //         printf("wat\n");
+    //         break;
+    //     default:
+    //         printf("unknown case number: %d\n", current_case.case_num);
     // }
 
     current_case = find_case(path);
-    switch (current_case.case_num) {
-        case 0:
-            stbuf->st_mode = S_IFDIR | 0755;
-            stbuf->st_nlink = 2;
-            res = 0;
-            break;
-        case 1:
-            stbuf->st_mode = S_IFREG | 0444;
-            stbuf->st_nlink = 1;
-            stbuf->st_size = strlen(doc_str[current_case.funct_num]);
-            res = 0;
-            break;
-        case 2:
-            stbuf->st_mode = S_IFDIR | 0755;
-            stbuf->st_nlink = 2;
-            res = 0;
-            break;
-        case 3:
-            content = folder_functions[current_case.funct_num](&current_case.a, &current_case.b);
-            stbuf->st_mode = S_IFREG | 0444;
-            stbuf->st_nlink = 1;
-            stbuf->st_size = strlen(content);
-            res = 0;
-            break;
-        case 4:
-            printf("incorrect number of arguments to %s\n", folders[current_case.funct_num] + 1);
-            break;
-        case 5:
-            content = folder_functions[current_case.funct_num](&current_case.a, &current_case.b);
-            stbuf->st_mode = S_IFREG | 0444;
-            stbuf->st_nlink = 1;
-            stbuf->st_size = strlen(content);
-            res = 0;
-            break;
-        case 6:
-            printf("wat\n");
-            break;
-        default:
-            printf("unknown case number: %d\n", current_case.case_num);
-    }
 
+    if (current_case.case_num == 0 || current_case.case_num == 2) {
+        stbuf->st_mode = S_IFDIR | 0755;
+        stbuf->st_nlink = 2;
+        res = 0;
+    } else if (current_case.case_num == 1) {
+        stbuf->st_mode = S_IFREG | 0444;
+        stbuf->st_nlink = 1;
+        stbuf->st_size = strlen(doc_str[current_case.funct_num]);
+        res = 0;
+    } else if (current_case.case_num == 3 || current_case.case_num == 5) {
+        content = folder_functions[current_case.funct_num](&current_case.a, &current_case.b);
+        stbuf->st_mode = S_IFREG | 0444;
+        stbuf->st_nlink = 1;
+        stbuf->st_size = strlen(content);
+        res = 0;
+    }
     return res;
 }
 
 static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
              off_t offset, struct fuse_file_info *fi)
 {
+    struct case_info current_case;
     int found = 0;
     printf("####################### path: '%s'\n", path);
     if (strcmp(path, "/") == 0)
@@ -415,49 +379,50 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
             filler(buf, folders[i] + 1, NULL, 0);
         found = 1;
     }
+    else
+    {
+        current_case = find_case(path);
 
-    // int i;
-    // for (i = 0; i < 7; i++)
-    // {
-    //     if (strcmp(path, folders[i]) == 0)
-    //     {
-    //         filler(buf, doc_path + 1, NULL, 0);
-    //         found = 1;
-    //     }
-    // }
-    int i;
-    for (i = 0; i < 7; i++) {
-        if (strcmp(path, folders[i]) == 0) {
+        if (current_case.case_num == 0) {
             filler(buf, doc_path + 1, NULL, 0);
             found = 1;
-            break;
-        } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
-            int a, b, numMatched;
-            if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
-                break;
-            }
-
-            numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a, &b);
-            // printf("%s matched %d\n", path, numMatched);
-
-            if (numMatched == 1) {
-                if (i != 0 && i != 1) {
-                    found = 1;
-                }
-                break;
-            } else if (numMatched == 2) {
-                if (i == 0 || i == 1) {
-                    printf("incorrect number of arguments to %s\n", folders[i] + 1);
-                } else {
-                    
-                }
-                break;
-            } else {
-                printf("wat, numMatched: %d\n", numMatched);
-                break;
-            }
-        }
+        } else if (current_case.case_num == 2)
+            found = 1;
     }
+
+    // int i;
+    // for (i = 0; i < 7; i++) {
+    //     if (strcmp(path, folders[i]) == 0) {
+    //         filler(buf, doc_path + 1, NULL, 0);
+    //         found = 1;
+    //         break;
+    //     } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
+    //         int a, b, numMatched;
+    //         if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
+    //             break;
+    //         }
+
+    //         numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a, &b);
+    //         // printf("%s matched %d\n", path, numMatched);
+
+    //         if (numMatched == 1) {
+    //             if (i != 0 && i != 1) {
+    //                 found = 1;
+    //             }
+    //             break;
+    //         } else if (numMatched == 2) {
+    //             if (i == 0 || i == 1) {
+    //                 printf("incorrect number of arguments to %s\n", folders[i] + 1);
+    //             } else {
+                    
+    //             }
+    //             break;
+    //         } else {
+    //             printf("wat, numMatched: %d\n", numMatched);
+    //             break;
+    //         }
+    //     }
+    // }
 
     if (found == 1)
     {
@@ -471,6 +436,7 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 static int hello_open(const char *path, struct fuse_file_info *fi)
 {
+    struct case_info current_case;
     int retval = -ENOENT;
     if (strcmp(path, hello_path) == 0)
     {
@@ -497,40 +463,45 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
 
     // return -ENOENT;
     
-    int i;
-    for (i = 0; i < 7; i++) {
-        if (strcmp(path, folders[i]) == 0) {
-            break;
-        } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
-            int a, b, numMatched;
-            if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
-                retval = 0;
-                break;
-            }
+    // int i;
+    // for (i = 0; i < 7; i++) {
+    //     if (strcmp(path, folders[i]) == 0) {
+    //         break;
+    //     } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
+    //         int a, b, numMatched;
+    //         if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
+    //             retval = 0;
+    //             break;
+    //         }
 
-            numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a, &b);
-            // printf("%s matched %d\n", path, numMatched);
+    //         numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a, &b);
+    //         // printf("%s matched %d\n", path, numMatched);
 
-            if (numMatched == 1) {
-                if (i != 0 && i != 1) {
+    //         if (numMatched == 1) {
+    //             if (i != 0 && i != 1) {
 
-                } else {
-                    retval = 0;
-                }
-                break;
-            } else if (numMatched == 2) {
-                if (i == 0 || i == 1) {
-                    printf("incorrect number of arguments to %s\n", folders[i] + 1);
-                } else {
-                    retval = 0;
-                }
-                break;
-            } else {
-                printf("wat, numMatched: %d\n", numMatched);
-                break;
-            }
-        }
-    }
+    //             } else {
+    //                 retval = 0;
+    //             }
+    //             break;
+    //         } else if (numMatched == 2) {
+    //             if (i == 0 || i == 1) {
+    //                 printf("incorrect number of arguments to %s\n", folders[i] + 1);
+    //             } else {
+    //                 retval = 0;
+    //             }
+    //             break;
+    //         } else {
+    //             printf("wat, numMatched: %d\n", numMatched);
+    //             break;
+    //         }
+    //     }
+    // }
+    
+    current_case = find_case(path);
+
+    if (current_case.case_num == 2 || current_case.case_num == 3 || current_case.case_num == 5)
+        retval = 0;
 
     if ((fi->flags & 3) != O_RDONLY)
         retval = -EACCES;
@@ -541,6 +512,7 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
 static int hello_read(const char *path, char *buf, size_t size, off_t offset,
               struct fuse_file_info *fi)
 {
+    struct case_info current_case;
     int retval = -ENOENT;
     size_t len;
 
@@ -582,68 +554,97 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
     //         }
     //     }
     // }
-    int i, numMatched;
-    union number a, b;
-    for (i = 0; i < 7; i++) {
-        if (strcmp(path, folders[i]) == 0) {
-            break;
-        } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
-            if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
-                len = strlen(doc_str[i]);
-                if (offset < len)
-                {
-                    if (offset + size > len)
-                        size = len - offset;
-                    memcpy(buf, doc_str[i] + offset, size);
-                }
-                else
-                    size = 0;
-                retval = size;
-                break;
-            }
+    
 
-            numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a.i, &b.i);
-            // printf("%s matched %d\n", path, numMatched);
+    // int i, numMatched;
+    // union number a, b;
+    // for (i = 0; i < 7; i++) {
+    //     if (strcmp(path, folders[i]) == 0) {
+    //         break;
+    //     } else if (strncmp(path, folders[i], strlen(folders[i])) == 0) {
+    //         if (strcmp(path + strlen(folders[i]), doc_path) == 0) {
+    //             len = strlen(doc_str[i]);
+    //             if (offset < len)
+    //             {
+    //                 if (offset + size > len)
+    //                     size = len - offset;
+    //                 memcpy(buf, doc_str[i] + offset, size);
+    //             }
+    //             else
+    //                 size = 0;
+    //             retval = size;
+    //             break;
+    //         }
 
-            if (numMatched == 1) {
-                if (i != 0 && i != 1) {
+    //         numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &a.i, &b.i);
+    //         // printf("%s matched %d\n", path, numMatched);
 
-                } else {
-                    char *content = folder_functions[i](&a, &b);
-                    len = strlen(content);
-                    if (offset < len)
-                    {
-                        if (offset + size > len)
-                            size = len - offset;
-                        memcpy(buf, content + offset, size);
-                    }
-                    else
-                        size = 0;
-                    retval = size;
-                }
-                break;
-            } else if (numMatched == 2) {
-                if (i == 0 || i == 1) {
-                    printf("incorrect number of arguments to %s\n", folders[i] + 1);
-                } else {
-                    char *content = folder_functions[i](&a, &b);
-                    len = strlen(content);
-                    if (offset < len)
-                    {
-                        if (offset + size > len)
-                            size = len - offset;
-                        memcpy(buf, content + offset, size);
-                    }
-                    else
-                        size = 0;
-                    retval = size;
-                }
-                break;
-            } else {
-                printf("wat, numMatched: %d\n", numMatched);
-                break;
-            }
+    //         if (numMatched == 1) {
+    //             if (i != 0 && i != 1) {
+
+    //             } else {
+    //                 char *content = folder_functions[i](&a, &b);
+    //                 len = strlen(content);
+    //                 if (offset < len)
+    //                 {
+    //                     if (offset + size > len)
+    //                         size = len - offset;
+    //                     memcpy(buf, content + offset, size);
+    //                 }
+    //                 else
+    //                     size = 0;
+    //                 retval = size;
+    //             }
+    //             break;
+    //         } else if (numMatched == 2) {
+    //             if (i == 0 || i == 1) {
+    //                 printf("incorrect number of arguments to %s\n", folders[i] + 1);
+    //             } else {
+    //                 char *content = folder_functions[i](&a, &b);
+    //                 len = strlen(content);
+    //                 if (offset < len)
+    //                 {
+    //                     if (offset + size > len)
+    //                         size = len - offset;
+    //                     memcpy(buf, content + offset, size);
+    //                 }
+    //                 else
+    //                     size = 0;
+    //                 retval = size;
+    //             }
+    //             break;
+    //         } else {
+    //             printf("wat, numMatched: %d\n", numMatched);
+    //             break;
+    //         }
+    //     }
+    // }
+
+    current_case = find_case(path);
+
+    if (current_case.case_num == 1) {
+        len = strlen(doc_str[current_case.funct_num]);
+        if (offset < len)
+        {
+            if (offset + size > len)
+                size = len - offset;
+            memcpy(buf, doc_str[current_case.funct_num] + offset, size);
         }
+        else
+            size = 0;
+        retval = size;
+    } else if (current_case.case_num == 3 || current_case.case_num == 5) {
+        char *content = folder_functions[current_case.funct_num](&current_case.a, &current_case.b);
+        len = strlen(content);
+        if (offset < len)
+        {
+            if (offset + size > len)
+                size = len - offset;
+            memcpy(buf, content + offset, size);
+        }
+        else
+            size = 0;
+        retval = size;
     }
 
     return retval;
