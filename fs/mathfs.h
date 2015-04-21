@@ -14,7 +14,7 @@ struct case_info {
 	union number b;
 };
 
-static char *_factor(struct case_info*);
+static char *_fac(struct case_info*);
 static char *_fib(struct case_info*);
 static char *_add(struct case_info*);
 static char *_sub(struct case_info*);

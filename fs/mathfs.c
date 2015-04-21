@@ -39,7 +39,7 @@ static const char *doc_str[] = {
 };
 
 static char* (*folder_functions[])(struct case_info*) = {
-	_factor,
+	_fac,
 	_fib,
 	_add,
 	_sub,
@@ -63,48 +63,52 @@ int isPrime(int n)
     int i;
     if(n == 2)
         return 1;
-    for(i = 2; i < sqrt(n); i++)
-    {
+    for (i = 2; i <= sqrt(n); i++) {
         if(n % i == 0)
             return 0;
     }
     return 1;
 }
 
-static char* _factor(struct case_info *current_case)
+static char *_fac(struct case_info *current_case)
 {
-    if(current_case->number_type == DOUBLE || current_case->a.i <= 0)
-    	return NULL;
-
-    static char factors[1000];
+    static char *intError = "Argument not an Integer\n";
+    static char *negError = "Argument is below zero\n";
+    static char primes[1000];
     char mychar[100];
-    int i, j = 0, count = 0, flag = 0, n = current_case->a.i;
-    for(i = 2; i < n; i++) {
-        if(n % i == 0) {
-            if(isPrime(i) == 1) {
-                sprintf(mychar, "%d\n", i);
-                if(strlen(mychar) > 1) {
-                    while(mychar[j] != '\0') {
-                        factors[count] = mychar[j];
+    int i, j = 0, count = 0, flag = 0;;
+    if (current_case->number_type == DOUBLE)
+        return intError;
+    else if (current_case->a.i < 0)
+        return negError;
+    else {
+        for(i = 2; i <= current_case->a.i; i++) {
+            if(current_case->a.i % i == 0) {
+                if (isPrime(i) == 1) {
+                    sprintf(mychar, "%d\n", i);
+                    if (strlen(mychar) > 1) {
+                        while (mychar[j] != '\0') {
+                            primes[count] = mychar[j];
+                            count++;
+                            j++;
+                        }
+                    } else {
+                        primes[count] = mychar[j];
                         count++;
                         j++;
                     }
-                } else {
-                    factors[count] = mychar[j];
-                    count++;
-                    j++;
+                    j = 0;
+                    flag = 1;
                 }
-                j = 0;
-                flag = 1;
+            }
+            if(flag == 1) {
+                primes[count] = '\n';
+                flag = 0;
             }
         }
-        if(flag == 1) {
-            //factors[count] = '\n';
-            flag = 0;
-        }
     }
-    factors[count] = '\0';
-    return factors;
+    primes[count] = '\0';
+    return primes;
 }
 
 static char *_fib(struct case_info *current_case)
@@ -207,7 +211,8 @@ struct case_info find_case(const char *path) {
 
 			if (sscanf(path + strlen(folders[i]), "/%d.%d/%d.%d", &ia, &ia, &ia, &ia) == 4 ||
 				sscanf(path + strlen(folders[i]), "/%d/%d.%d", &ia, &ia, &ia) == 3 ||
-				sscanf(path + strlen(folders[i]), "/%d.%d/%d", &ia, &ia, &ia) == 3)
+				sscanf(path + strlen(folders[i]), "/%d.%d/%d", &ia, &ia, &ia) == 3 ||
+				sscanf(path + strlen(folders[i]), "/%d.%d", &ia, &ia) == 2)
 				isDouble = 1;
 
 			if (isDouble)
