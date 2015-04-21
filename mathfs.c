@@ -5,7 +5,7 @@
   This program can be distributed under the terms of the GNU GPL.
   See the file COPYING.
 
-  gcc -Wall hello.c `pkg-config fuse --cflags --libs` -o hello
+  gcc -Wall mathfs.c `pkg-config fuse --cflags --libs` -o mathfs
 */
 
 #define FUSE_USE_VERSION 26
@@ -31,8 +31,6 @@ struct case_info {
     union number b;
 };
 
-static const char *hello_str = "Hello World!\n";
-static const char *hello_path = "/hello";
 static char *doc_path = "/doc";
 static const char *folders[] = {
     "/factor",
@@ -111,32 +109,32 @@ int* primeFactor(int n)
 
 static char *_add(struct case_info *current_case)
 {
-    static char sum_string[1000];
+    static char string[1000];
     if (current_case->number_type == INTEGER)
-        sprintf(sum_string, "%d\n", current_case->a.i + current_case->b.i);
+        sprintf(string, "%d\n", current_case->a.i + current_case->b.i);
     else
-        sprintf(sum_string, "%lf\n", current_case->a.d + current_case->b.d);
-    return sum_string;
+        sprintf(string, "%lf\n", current_case->a.d + current_case->b.d);
+    return string;
 }
 
 static char *_factor(struct case_info *current_case)
 {
-    static char sum_string[1000];
+    static char string[1000];
     if (current_case->number_type == INTEGER)
-        sprintf(sum_string, "%d\n", current_case->a.i + current_case->b.i);
+        sprintf(string, "%d\n", current_case->a.i + current_case->b.i);
     else
-        sprintf(sum_string, "%lf\n", current_case->a.d + current_case->b.d);
-    return sum_string;
+        sprintf(string, "%lf\n", current_case->a.d + current_case->b.d);
+    return string;
 }
 
 static char *_fib(struct case_info *current_case)
 {
-    static char sum_string[1000];
+    static char string[1000];
     if (current_case->number_type == INTEGER)
-        sprintf(sum_string, "%d\n", current_case->a.i + current_case->b.i);
+        sprintf(string, "%d\n", current_case->a.i + current_case->b.i);
     else
-        sprintf(sum_string, "%lf\n", current_case->a.d + current_case->b.d);
-    return sum_string;
+        sprintf(string, "%lf\n", current_case->a.d + current_case->b.d);
+    return string;
 }
 
 static char *_sub(struct case_info *current_case)
@@ -151,32 +149,39 @@ static char *_sub(struct case_info *current_case)
 
 static char *_mul(struct case_info *current_case)
 {
-    static char sum_string[1000];
+    static char string[1000];
     if (current_case->number_type == INTEGER)
-        sprintf(sum_string, "%d\n", current_case->a.i + current_case->b.i);
+        sprintf(string, "%d\n", current_case->a.i * current_case->b.i);
     else
-        sprintf(sum_string, "%lf\n", current_case->a.d + current_case->b.d);
-    return sum_string;
+        sprintf(string, "%lf\n", current_case->a.d * current_case->b.d);
+    return string;
 }
 
 static char *_div(struct case_info *current_case)
 {
-    static char sum_string[1000];
-    if (current_case->number_type == INTEGER)
-        sprintf(sum_string, "%d\n", current_case->a.i + current_case->b.i);
+    static char string[1000];
+    if (current_case->number_type == INTEGER && current_case->b.i != 0)
+        sprintf(string, "%d\n", current_case->a.i / current_case->b.i);
+    else if (current_case->number_type == DOUBLE && current_case->b.d != 0.0)
+        sprintf(string, "%lf\n", current_case->a.d / current_case->b.d);
     else
-        sprintf(sum_string, "%lf\n", current_case->a.d + current_case->b.d);
-    return sum_string;
+        return NULL;
+    return string;
 }
 
 static char *_exp(struct case_info *current_case)
 {
-    static char sum_string[1000];
-    if (current_case->number_type == INTEGER)
-        sprintf(sum_string, "%d\n", current_case->a.i + current_case->b.i);
-    else
-        sprintf(sum_string, "%lf\n", current_case->a.d + current_case->b.d);
-    return sum_string;
+    static char string[1000];
+    if (current_case->number_type == INTEGER) {
+        int total = 1;
+        int i;
+        for (i = 0; i < current_case->b.i; i++)
+            total *= current_case->a.i;
+        sprintf(string, "%d\n", total);
+    } else
+        return NULL;
+        // sprintf(string, "%lf\n", current_case->a.d + current_case->b.d);
+    return string;
 }
 
 struct case_info find_case(const char *path) {
@@ -197,32 +202,27 @@ struct case_info find_case(const char *path) {
                 break;
             }
 
-            intNumMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &ia, &ib);
-            if ((doubleNumMatched = sscanf(path + strlen(folders[i]), "/%lf/%lf", &da, &db)) > intNumMatched) {
+            doubleNumMatched = sscanf(path + strlen(folders[i]), "/%lf/%lf", &da, &db);
+            if ((intNumMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &ia, &ib)) > doubleNumMatched)
+                numMatched = intNumMatched;
+            else {
                 numMatched = doubleNumMatched;
                 isDouble = 1;
-            } else {
-                numMatched = intNumMatched;
             }
-            // printf("%s matched %d\n", path, numMatched);
 
             if (numMatched == 1) {
-                if (i != 0 && i != 1) {
+                if (i != 0 && i != 1)
                     case_value = 2;
-                } else {
+                else
                     case_value = 3;
-                }
                 break;
             } else if (numMatched == 2) {
-                if (i == 0 || i == 1) {
-                    // printf("incorrect number of arguments to %s\n", folders[i] + 1);
+                if (i == 0 || i == 1) // incorrect number of arguments
                     case_value = 4;
-                } else {
+                else
                     case_value = 5;
-                }
                 break;
             } else {
-                // printf("wat, numMatched: %d\n", numMatched);
                 case_value = -1;
                 break;
             }
@@ -242,18 +242,15 @@ struct case_info find_case(const char *path) {
     return_struct.case_num = case_value;
     return_struct.funct_num = i;
     return_struct.num_matched = numMatched;
-    // return_struct.a.i = a;
-    // return_struct.b.i = b;
 
     return return_struct;
 }
 
-static int hello_getattr(const char *path, struct stat *stbuf)
+static int mathfs_getattr(const char *path, struct stat *stbuf)
 {
     struct case_info current_case;
     char *content;
     int res = -ENOENT;
-    // printf("#####################getattr(\"%s\")\n", path);
 
     memset(stbuf, 0, sizeof(struct stat));
     if (strcmp(path, "/") == 0) {
@@ -261,14 +258,6 @@ static int hello_getattr(const char *path, struct stat *stbuf)
         stbuf->st_nlink = 2;
         res = 0;
     }
-    else if (strcmp(path, hello_path) == 0) {
-        stbuf->st_mode = S_IFREG | 0444;
-        stbuf->st_nlink = 1;
-        stbuf->st_size = strlen(hello_str);
-        res = 0;
-    }
-
-    // printf("#####################getattr path: '%s'\n", path);
 
     current_case = find_case(path);
 
@@ -283,23 +272,24 @@ static int hello_getattr(const char *path, struct stat *stbuf)
         res = 0;
     } else if (current_case.case_num == 3 || current_case.case_num == 5) {
         content = folder_functions[current_case.funct_num](&current_case);
-        stbuf->st_mode = S_IFREG | 0444;
-        stbuf->st_nlink = 1;
-        stbuf->st_size = strlen(content);
-        res = 0;
+        if (content != NULL) {
+            stbuf->st_mode = S_IFREG | 0444;
+            stbuf->st_nlink = 1;
+            stbuf->st_size = strlen(content);
+            res = 0;
+        }
     }
     return res;
 }
 
-static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+static int mathfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
              off_t offset, struct fuse_file_info *fi)
 {
     struct case_info current_case;
     int found = 0;
-    // printf("####################### path: '%s'\n", path);
+    
     if (strcmp(path, "/") == 0)
     {
-        filler(buf, hello_path + 1, NULL, 0);
         int i;
         for (i = 0; i < 7; i++)
             filler(buf, folders[i] + 1, NULL, 0);
@@ -326,16 +316,10 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         return -ENOENT;
 }
 
-static int hello_open(const char *path, struct fuse_file_info *fi)
+static int mathfs_open(const char *path, struct fuse_file_info *fi)
 {
     struct case_info current_case;
     int retval = -ENOENT;
-    if (strcmp(path, hello_path) == 0)
-    {
-        if ((fi->flags & 3) != O_RDONLY)
-            return -EACCES;
-        return 0;
-    }
     
     current_case = find_case(path);
 
@@ -348,25 +332,13 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
     return retval;
 }
 
-static int hello_read(const char *path, char *buf, size_t size, off_t offset,
+static int mathfs_read(const char *path, char *buf, size_t size, off_t offset,
               struct fuse_file_info *fi)
 {
     struct case_info current_case;
     int retval = -ENOENT;
     const char *content = NULL;
     size_t len;
-
-    if(strcmp(path, hello_path) == 0)
-    {
-        len = strlen(hello_str);
-        if (offset < len) {
-            if (offset + size > len)
-                size = len - offset;
-            memcpy(buf, hello_str + offset, size);
-        } else
-            size = 0;
-        return size;
-    }
 
     current_case = find_case(path);
 
@@ -375,29 +347,31 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
     else if (current_case.case_num == 3 || current_case.case_num == 5)
         content = folder_functions[current_case.funct_num](&current_case);
 
-    len = strlen(content);
-    if (offset < len)
-    {
-        if (offset + size > len)
-            size = len - offset;
-        memcpy(buf, content + offset, size);
+    if (content != NULL) {
+        len = strlen(content);
+        if (offset < len)
+        {
+            if (offset + size > len)
+                size = len - offset;
+            memcpy(buf, content + offset, size);
+        }
+        else
+            size = 0;
+        retval = size;
     }
-    else
-        size = 0;
-    retval = size;
 
     return retval;
 }
 
-static struct fuse_operations hello_oper = {
-    .getattr    = hello_getattr,
-    .readdir    = hello_readdir,
-    .open       = hello_open,
-    .read       = hello_read,
+static struct fuse_operations mathfs_oper = {
+    .getattr    = mathfs_getattr,
+    .readdir    = mathfs_readdir,
+    .open       = mathfs_open,
+    .read       = mathfs_read,
 };
 
 int main(int argc, char *argv[])
 {
-    return fuse_main(argc, argv, &hello_oper, NULL);
+    return fuse_main(argc, argv, &mathfs_oper, NULL);
 }
 
