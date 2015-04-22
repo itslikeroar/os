@@ -167,12 +167,13 @@ static char *_mul(struct case_info *current_case)
 static char *_div(struct case_info *current_case)
 {
 	static char string[1000];
+	static char* error = "Error: can't divide by 0\n";
 	if (current_case->number_type == INTEGER && current_case->b.i != 0)
 		sprintf(string, "%d\n", current_case->a.i / current_case->b.i);
 	else if (current_case->number_type == DOUBLE && current_case->b.d != 0.0)
 		sprintf(string, "%lf\n", current_case->a.d / current_case->b.d);
 	else
-		return NULL;
+		return error;
 	return string;
 }
 
@@ -194,7 +195,7 @@ static char *_exp(struct case_info *current_case)
 struct case_info find_case(const char *path) {
 	struct case_info return_struct;
 	int case_value;
-	// int return_value = 0;
+	char buf[200];
 	int i, j;
 	int num_slashes = 0;
 	// union number a, b;
@@ -245,30 +246,37 @@ struct case_info find_case(const char *path) {
 		}
 	}
 
-	for (j = 0; j < strlen(path); j++) {
-		if (path[j] == '/') {
-			num_slashes++;
-		}
-		if (num_slashes > 2 && (i == 0 || i == 1)) {
-			case_value = -1;
-			break;
-		} else if (num_slashes > 3) {
-			case_value = -1;
-			break;
-		}
-	}
+	// for (j = 0; j < strlen(path); j++) {
+	// 	if (path[j] == '/') {
+	// 		num_slashes++;
+	// 	}
+	// 	if (num_slashes > 2 && (i == 0 || i == 1)) {
+	// 		case_value = -1;
+	// 		break;
+	// 	} else if (num_slashes > 3) {
+	// 		case_value = -1;
+	// 		break;
+	// 	}
+	// }
 
-	printf("####### path: '%s'\tcase: %d\n", path, case_value);
+	// printf("####### path: '%s'\tcase: %d\n", path, case_value);
 
 	if (isDouble) {
 		return_struct.number_type = DOUBLE;
 		return_struct.a.d = da;
 		return_struct.b.d = db;
+		sprintf(buf, "/%lf/%lf", da, db);
 	} else {
 		return_struct.number_type = INTEGER;
 		return_struct.a.i = ia;
 		return_struct.b.i = ib;
+		sprintf(buf, "/%d/%d", ia, ib);
 	}
+
+	// printf("################## buf: %s\n", buf);
+
+	if (strcmp(path + strlen(folders[i]), buf) == 0)
+		return_struct.case_num = -1;
 
 	return_struct.case_num = case_value;
 	return_struct.funct_num = i;
