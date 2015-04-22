@@ -198,7 +198,7 @@ struct case_info find_case(const char *path) {
 	int i, j;
 	int num_slashes = 0;
 	// union number a, b;
-	int ia, ib, numMatched, isDouble = 0;
+	int ia, ib, numMatched = 0, isDouble = 0;
 	double da, db;
 	for (i = 0; i < 7; i++) {
 		if (strcmp(path, folders[i]) == 0) {
@@ -213,7 +213,12 @@ struct case_info find_case(const char *path) {
 			if (sscanf(path + strlen(folders[i]), "/%d.%d/%d.%d", &ia, &ia, &ia, &ia) == 4 ||
 				sscanf(path + strlen(folders[i]), "/%d/%d.%d", &ia, &ia, &ia) == 3 ||
 				sscanf(path + strlen(folders[i]), "/%d.%d/%d", &ia, &ia, &ia) == 3 ||
-				sscanf(path + strlen(folders[i]), "/%d.%d", &ia, &ia) == 2)
+				sscanf(path + strlen(folders[i]), "/.%d/%d", &ia, &ia) == 2 ||
+				sscanf(path + strlen(folders[i]), "/-.%d/%d", &ia, &ia) == 2 ||
+				sscanf(path + strlen(folders[i]), "/%d/.%d", &ia, &ia) == 2 ||
+				sscanf(path + strlen(folders[i]), "/%d.%d", &ia, &ia) == 2 ||
+				sscanf(path + strlen(folders[i]), "/.%d", &ia) == 1 ||
+				sscanf(path + strlen(folders[i]), "/-.%d", &ia) == 1)
 				isDouble = 1;
 
 			if (isDouble)
@@ -352,7 +357,7 @@ static int mathfs_open(const char *path, struct fuse_file_info *fi)
 	
 	current_case = find_case(path);
 
-	if (current_case.case_num == 2 || current_case.case_num == 3 || current_case.case_num == 5)
+	if (current_case.case_num == 1 || current_case.case_num == 2 || current_case.case_num == 3 || current_case.case_num == 5)
 		retval = 0;
 
 	if ((fi->flags & 3) != O_RDONLY)
