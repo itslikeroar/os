@@ -117,8 +117,8 @@ static char *_fib(struct case_info *current_case)
 	char buf[100];
 	unsigned long int i, a = 0, b = 1;
 
-	printf("MANY HERE: %d\n", current_case->a.i);
-	if (current_case->number_type == DOUBLE || current_case->a.i <= 0)
+	// printf("MANY HERE: %d\n", current_case->a.i);
+	if (current_case->number_type != INTEGER || current_case->a.i <= 0)
 		return NULL;
 
 	// put the first one fib num in the string
@@ -195,7 +195,8 @@ struct case_info find_case(const char *path) {
 	struct case_info return_struct;
 	int case_value;
 	// int return_value = 0;
-	int i;
+	int i, j;
+	int num_slashes = 0;
 	// union number a, b;
 	int ia, ib, numMatched, isDouble = 0;
 	double da, db;
@@ -238,6 +239,21 @@ struct case_info find_case(const char *path) {
 			}
 		}
 	}
+
+	for (j = 0; j < strlen(path); j++) {
+		if (path[j] == '/') {
+			num_slashes++;
+		}
+		if (num_slashes > 2 && (i == 0 || i == 1)) {
+			case_value = -1;
+			break;
+		} else if (num_slashes > 3) {
+			case_value = -1;
+			break;
+		}
+	}
+
+	printf("####### path: '%s'\tcase: %d\n", path, case_value);
 
 	if (isDouble) {
 		return_struct.number_type = DOUBLE;
