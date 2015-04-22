@@ -196,8 +196,7 @@ struct case_info find_case(const char *path) {
 	struct case_info return_struct;
 	int case_value;
 	char buf[200];
-	int i, j;
-	int num_slashes = 0;
+	int i;
 	// union number a, b;
 	int ia, ib, numMatched = 0, isDouble = 0;
 	double da, db;
