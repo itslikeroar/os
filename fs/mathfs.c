@@ -230,12 +230,30 @@ struct case_info find_case(const char *path) {
 				numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &ia, &ib);
 
 			if (numMatched == 1) {	// one argument given
+				if (isDouble)
+					sprintf(buf, "/%lf", da);
+				else
+					sprintf(buf, "/%d", ia);
+				if (strcmp(path + strlen(folders[i]), buf) != 0) {
+					case_value = 1;
+					break;
+				}
+
 				if (i == 0 || i == 1)
 					case_value = 3;	// function takes 1 argument
-				else
+				else 
 					case_value = 2;	// function takes 2 arguments
 				break;
 			} else if (numMatched == 2) {	// two arguments given
+				if (isDouble)
+					sprintf(buf, "/%lf/%lf", da, db);
+				else
+					sprintf(buf, "/%d/%d", ia, ib);
+				if (strcmp(path + strlen(folders[i]), buf) != 0) {
+					case_value = 1;
+					break;
+				}
+				
 				if (i == 0 || i == 1)
 					case_value = 4;	// function takes 1 argument
 				else
@@ -275,10 +293,10 @@ struct case_info find_case(const char *path) {
 		// sprintf(buf, "/%d/%d", ia, ib);
 	}
 
-	// printf("################## buf: %s\n", buf);
+	// printf("######## case: %d path: '%s' buf: '%s'\n", case_value, path, buf);
 
-	// if (strcmp(path, buf) == 0 && case_value >= 2)
-	// 	return_struct.case_num = -1;
+	// if (case_value >= 2 && strcmp(path, buf) == 0)
+	// 	case_value = -1;
 
 	return_struct.case_num = case_value;
 	return_struct.funct_num = i;
