@@ -1,4 +1,8 @@
 /* 
+	Rodrigo Pacheco Curro (rap256)
+	Sisheng Zhang (sz320)
+	Brian Yoo (bgy2)
+
   FUSE: Filesystem in Userspace
   Copyright (C) 2001-2007  Miklos Szeredi <miklos@szeredi.hu>
 
@@ -230,14 +234,15 @@ struct case_info find_case(const char *path) {
 				numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &ia, &ib);
 
 			if (numMatched == 1) {	// one argument given
-				if (isDouble)
-					sprintf(buf, "/%lf", da);
-				else
+				// if (isDouble)
+				// 	sprintf(buf, "/%lf", da);
+				if (!isDouble) {
 					sprintf(buf, "/%d", ia);
-
-				if (strcmp(path + strlen(folders[i]), buf) != 0) {
-					case_value = -1;
-					break;
+					if (strcmp(path + strlen(folders[i]), buf) != 0) {
+						printf("!!!!!!!!!!!!!!! buf: %s\n", buf);
+						case_value = -1;
+						break;
+					}
 				}
 
 				if (i == 0 || i == 1)
@@ -246,14 +251,15 @@ struct case_info find_case(const char *path) {
 					case_value = 2;	// function takes 2 arguments
 				break;
 			} else if (numMatched == 2) {	// two arguments given
-				if (isDouble)
-					sprintf(buf, "/%lf/%lf", da, db);
-				else
+				// if (isDouble)
+				// 	sprintf(buf, "/%lf/%lf", da, db);
+				if (!isDouble) {
 					sprintf(buf, "/%d/%d", ia, ib);
-
-				if (strcmp(path + strlen(folders[i]), buf) != 0) {
-					case_value = -1;
-					break;
+					if (strcmp(path + strlen(folders[i]), buf) != 0) {
+						printf("@@@@@@@@@@@@@@@@@\n");
+						case_value = -1;
+						break;
+					}
 				}
 
 				if (i == 0 || i == 1)
@@ -287,18 +293,18 @@ struct case_info find_case(const char *path) {
 		return_struct.number_type = DOUBLE;
 		return_struct.a.d = da;
 		return_struct.b.d = db;
-		sprintf(buf, "/%lf/%lf", da, db);
+		// sprintf(buf, "/%lf/%lf", da, db);
 	} else {
 		return_struct.number_type = INTEGER;
 		return_struct.a.i = ia;
 		return_struct.b.i = ib;
-		sprintf(buf, "/%d/%d", ia, ib);
+		// sprintf(buf, "/%d/%d", ia, ib);
 	}
 
 	// printf("######## case: %d path: '%s' buf: '%s'\n", case_value, path, buf);
 
-	if (case_value >= 2 && strcmp(path, buf) == 0)
-		case_value = -1;
+	// if (case_value >= 2 && strcmp(path, buf) == 0)
+	// 	case_value = -1;
 
 	return_struct.case_num = case_value;
 	return_struct.funct_num = i;
