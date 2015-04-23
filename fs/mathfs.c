@@ -186,8 +186,10 @@ static char *_exp(struct case_info *current_case)
 		for (i = 0; i < current_case->b.i; i++)
 			total *= current_case->a.i;
 		sprintf(string, "%d\n", total);
-	} else
-		return NULL;
+	} else {
+		double result = pow(current_case->a.d, current_case->b.d);
+		sprintf(string, "%lf\n", result);
+	}
 		// sprintf(string, "%lf\n", current_case->a.d + current_case->b.d);
 	return string;
 }
@@ -196,7 +198,7 @@ struct case_info find_case(const char *path) {
 	struct case_info return_struct;
 	int case_value;
 	char buf[200];
-	int i;
+	int i, j, num_slashes = 0;
 	// union number a, b;
 	int ia, ib, numMatched = 0, isDouble = 0;
 	double da, db;
@@ -218,7 +220,8 @@ struct case_info find_case(const char *path) {
 				sscanf(path + strlen(folders[i]), "/%d/.%d", &ia, &ia) == 2 ||
 				sscanf(path + strlen(folders[i]), "/%d.%d", &ia, &ia) == 2 ||
 				sscanf(path + strlen(folders[i]), "/.%d", &ia) == 1 ||
-				sscanf(path + strlen(folders[i]), "/-.%d", &ia) == 1)
+				sscanf(path + strlen(folders[i]), "/-.%d", &ia) == 1 ||
+				i == 5)
 				isDouble = 1;
 
 			if (isDouble)
@@ -264,18 +267,18 @@ struct case_info find_case(const char *path) {
 		return_struct.number_type = DOUBLE;
 		return_struct.a.d = da;
 		return_struct.b.d = db;
-		sprintf(buf, "/%lf/%lf", da, db);
+		// sprintf(buf, "/%lf/%lf", da, db);
 	} else {
 		return_struct.number_type = INTEGER;
 		return_struct.a.i = ia;
 		return_struct.b.i = ib;
-		sprintf(buf, "/%d/%d", ia, ib);
+		// sprintf(buf, "/%d/%d", ia, ib);
 	}
 
 	// printf("################## buf: %s\n", buf);
 
-	if (strcmp(path + strlen(folders[i]), buf) == 0)
-		return_struct.case_num = -1;
+	// if (strcmp(path, buf) == 0 && case_value >= 2)
+	// 	return_struct.case_num = -1;
 
 	return_struct.case_num = case_value;
 	return_struct.funct_num = i;
