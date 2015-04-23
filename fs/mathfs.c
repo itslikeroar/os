@@ -234,8 +234,9 @@ struct case_info find_case(const char *path) {
 					sprintf(buf, "/%lf", da);
 				else
 					sprintf(buf, "/%d", ia);
+
 				if (strcmp(path + strlen(folders[i]), buf) != 0) {
-					case_value = 1;
+					case_value = -1;
 					break;
 				}
 
@@ -249,11 +250,12 @@ struct case_info find_case(const char *path) {
 					sprintf(buf, "/%lf/%lf", da, db);
 				else
 					sprintf(buf, "/%d/%d", ia, ib);
+
 				if (strcmp(path + strlen(folders[i]), buf) != 0) {
-					case_value = 1;
+					case_value = -1;
 					break;
 				}
-				
+
 				if (i == 0 || i == 1)
 					case_value = 4;	// function takes 1 argument
 				else
@@ -279,24 +281,24 @@ struct case_info find_case(const char *path) {
 	// 	}
 	// }
 
-	// printf("####### path: '%s'\tcase: %d\n", path, case_value);
+	printf("####### path: '%s'\tcase: %d\n", path, case_value);
 
 	if (isDouble) {
 		return_struct.number_type = DOUBLE;
 		return_struct.a.d = da;
 		return_struct.b.d = db;
-		// sprintf(buf, "/%lf/%lf", da, db);
+		sprintf(buf, "/%lf/%lf", da, db);
 	} else {
 		return_struct.number_type = INTEGER;
 		return_struct.a.i = ia;
 		return_struct.b.i = ib;
-		// sprintf(buf, "/%d/%d", ia, ib);
+		sprintf(buf, "/%d/%d", ia, ib);
 	}
 
 	// printf("######## case: %d path: '%s' buf: '%s'\n", case_value, path, buf);
 
-	// if (case_value >= 2 && strcmp(path, buf) == 0)
-	// 	case_value = -1;
+	if (case_value >= 2 && strcmp(path, buf) == 0)
+		case_value = -1;
 
 	return_struct.case_num = case_value;
 	return_struct.funct_num = i;
