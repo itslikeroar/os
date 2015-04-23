@@ -202,7 +202,7 @@ struct case_info find_case(const char *path) {
 	struct case_info return_struct;
 	int case_value;
 	char buf[200];
-	int i, j, num_slashes = 0;
+	int i;
 	// union number a, b;
 	int ia, ib, numMatched = 0, isDouble = 0;
 	double da, db;
@@ -234,12 +234,9 @@ struct case_info find_case(const char *path) {
 				numMatched = sscanf(path + strlen(folders[i]), "/%d/%d", &ia, &ib);
 
 			if (numMatched == 1) {	// one argument given
-				// if (isDouble)
-				// 	sprintf(buf, "/%lf", da);
 				if (!isDouble) {
 					sprintf(buf, "/%d", ia);
 					if (strcmp(path + strlen(folders[i]), buf) != 0) {
-						printf("!!!!!!!!!!!!!!! buf: %s\n", buf);
 						case_value = -1;
 						break;
 					}
@@ -251,12 +248,9 @@ struct case_info find_case(const char *path) {
 					case_value = 2;	// function takes 2 arguments
 				break;
 			} else if (numMatched == 2) {	// two arguments given
-				// if (isDouble)
-				// 	sprintf(buf, "/%lf/%lf", da, db);
 				if (!isDouble) {
 					sprintf(buf, "/%d/%d", ia, ib);
 					if (strcmp(path + strlen(folders[i]), buf) != 0) {
-						printf("@@@@@@@@@@@@@@@@@\n");
 						case_value = -1;
 						break;
 					}
@@ -274,41 +268,18 @@ struct case_info find_case(const char *path) {
 		}
 	}
 
-	// for (j = 0; j < strlen(path); j++) {
-	// 	if (path[j] == '/') {
-	// 		num_slashes++;
-	// 	}
-	// 	if (num_slashes > 2 && (i == 0 || i == 1)) {
-	// 		case_value = -1;
-	// 		break;
-	// 	} else if (num_slashes > 3) {
-	// 		case_value = -1;
-	// 		break;
-	// 	}
-	// }
-
-	printf("####### path: '%s'\tcase: %d\n", path, case_value);
-
 	if (isDouble) {
 		return_struct.number_type = DOUBLE;
 		return_struct.a.d = da;
 		return_struct.b.d = db;
-		// sprintf(buf, "/%lf/%lf", da, db);
 	} else {
 		return_struct.number_type = INTEGER;
 		return_struct.a.i = ia;
 		return_struct.b.i = ib;
-		// sprintf(buf, "/%d/%d", ia, ib);
 	}
-
-	// printf("######## case: %d path: '%s' buf: '%s'\n", case_value, path, buf);
-
-	// if (case_value >= 2 && strcmp(path, buf) == 0)
-	// 	case_value = -1;
 
 	return_struct.case_num = case_value;
 	return_struct.funct_num = i;
-	// return_struct.num_matched = numMatched;
 
 	return return_struct;
 }
@@ -345,8 +316,6 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 				stbuf->st_size = strlen(content);
 				res = 0;
 			}
-			else
-				printf("here!!!!!!!!!!!!!!!!!!!!! %d\n", current_case.funct_num);
 		}
 	}
 	return res;
